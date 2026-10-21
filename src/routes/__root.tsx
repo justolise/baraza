@@ -1,8 +1,11 @@
+import React from 'react'
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
+import Header from '../components/Header.tsx'
+import Footer from '../components/Footer.tsx'
+import MobileBottomNav from '../components/MobileBottomNav.tsx'
+import { AuthProvider } from '../lib/auth-context.tsx'
 
 import appCss from '../styles.css?url'
 
@@ -19,7 +22,11 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'SomoPal — Unofficial AZ-900 Study Buddy for African Learners',
+      },
+      {
+        name: 'description',
+        content: 'Unofficial: not affiliated with or endorsed by Microsoft. SomoPal is an AI study buddy and readiness tracker for the Azure Fundamentals (AZ-900) exam, grounded in African everyday analogies.',
       },
     ],
     links: [
@@ -39,10 +46,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
-        {children}
-        <Footer />
+      <body className="flex min-h-screen flex-col font-sans antialiased selection:bg-teal-500/20 selection:text-teal-900 dark:selection:text-teal-200">
+        <AuthProvider>
+          <Header />
+          <main className="flex-1 pb-16 md:pb-0">{children}</main>
+          <MobileBottomNav />
+          <Footer />
+        </AuthProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
