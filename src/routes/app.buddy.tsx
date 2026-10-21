@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { streamText } from 'ai'
+import { generateText } from 'ai'
 import {
   Sparkles,
   Send,
@@ -23,18 +23,54 @@ export const Route = createFileRoute('/app/buddy')({
   component: BuddyPage,
 })
 
-// ─── Server function: RAG retrieval (embedding is server-side to keep API key hidden) ──────────────
-const retrieveContext = createServerFn({ method: 'POST' })
-  .validator((data: unknown) => data as { query: string; topicSlug?: string; language: string })
+// ─── Server function: AI Buddy response with RAG (secure server-side execution) ─
+const askBuddy = createServerFn({ method: 'POST' })
+  .validator(
+    (data: unknown) =>
+      data as {
+        text: string
+        topicSlug?: string
+        language: 'en' | 'sw'
+        history: { role: 'user' | 'assistant'; content: string }[]
+        daysToExam?: string
+      }
+  )
   .handler(async ({ data }) => {
-    const chunks = await retrieveChunks(data.query, {
+    if (!CONFIG.geminiApiKey) {
+      throw new Error(
+        'GEMINI_API_KEY is not configured on the server. Please check your .env file.'
+      )
+    }
+
+    // 1. RAG retrieval (server-side)
+    const chunks = await retrieveChunks(data.text, {
       topicSlug: data.topicSlug,
       topK: CONFIG.retrievalMatchCount,
       threshold: CONFIG.retrievalThreshold,
     })
+    const context = formatContext(chunks)
+    const topicHints = [...new Set(chunks.map((c) => c.topicTitle))].slice(0, 3)
+
+    // 2. Build system prompt
+    const systemPrompt = buildBuddySystemPrompt({
+      language: data.language,
+      weakTopics: 'None identified yet',
+      daysToExam: data.daysToExam,
+      context,
+    })
+
+    // 3. AI SDK generation on server
+    const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
+    const { text } = await generateText({
+      model: google(CONFIG.geminiModel),
+      system: systemPrompt,
+      messages: [...data.history, { role: 'user', content: data.text }],
+      maxOutputTokens: 1200,
+    })
+
     return {
-      context: formatContext(chunks),
-      topicHints: [...new Set(chunks.map((c) => c.topicTitle))].slice(0, 3),
+      content: text,
+      topicHints,
     }
   })
 
@@ -174,63 +210,54 @@ function BuddyPage() {
       ])
 
       try {
-        // 1. RAG retrieval (server-side)
-        const { context, topicHints } = await retrieveContext({
-          data: { query: text.trim(), language },
-        })
-
-        // 2. Build system prompt
-        const systemPrompt = buildBuddySystemPrompt({
-          language,
-          weakTopics: 'None identified yet',
-          daysToExam: profile?.exam_date
-            ? String(
-                Math.max(
-                  0,
-                  Math.ceil(
-                    (new Date(profile.exam_date).getTime() - Date.now()) / 86400000
-                  )
-                )
-              )
-            : undefined,
-          context,
-        })
-
-        // 3. Build message history (last 6 exchanges to stay in context)
         const historyForAI = messages
           .slice(-12)
           .filter((m) => m.content)
           .map((m) => ({ role: m.role, content: m.content }))
-        historyForAI.push({ role: 'user', content: text.trim() })
 
-        // 4. Stream via AI SDK (client-side with GEMINI_API_KEY)
-        const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
-        const ctrl = new AbortController()
-        abortRef.current = ctrl
+        const daysToExam = profile?.exam_date
+          ? String(
+              Math.max(
+                0,
+                Math.ceil(
+                  (new Date(profile.exam_date).getTime() - Date.now()) / 86400000
+                )
+              )
+            )
+          : undefined
 
-        const result = streamText({
-          model: google(CONFIG.geminiModel),
-          system: systemPrompt,
-          messages: historyForAI,
-          abortSignal: ctrl.signal,
-          maxOutputTokens: 1200,
+        // Call server function where GEMINI_API_KEY is available
+        const res = await askBuddy({
+          data: {
+            text: text.trim(),
+            language,
+            history: historyForAI,
+            daysToExam,
+          },
         })
 
+        // Smooth typewriter streaming animation for rich dynamic feel
+        const fullContent = res.content
+        const chunkSize = Math.max(4, Math.floor(fullContent.length / 30))
         let accumulated = ''
-        for await (const delta of result.textStream) {
-          accumulated += delta
+
+        for (let i = 0; i < fullContent.length; i += chunkSize) {
+          accumulated = fullContent.slice(0, i + chunkSize)
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
-                ? { ...m, content: accumulated, topicHints, isStreaming: true }
+                ? { ...m, content: accumulated, topicHints: res.topicHints, isStreaming: true }
                 : m
             )
           )
+          await new Promise((resolve) => setTimeout(resolve, 15))
         }
 
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantId ? { ...m, content: accumulated, topicHints, isStreaming: false } : m
+            m.id === assistantId
+              ? { ...m, content: fullContent, topicHints: res.topicHints, isStreaming: false }
+              : m
           )
         )
       } catch (err: unknown) {

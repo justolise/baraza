@@ -57,6 +57,9 @@ export const generateQuiz = createServerFn({ method: 'POST' })
     })
 
     // 3. Call AI
+    if (!CONFIG.geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not configured on the server. Please check your .env file.')
+    }
     const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
     const { text } = await generateText({
       model: google(CONFIG.geminiModel),
@@ -125,13 +128,8 @@ function QuizHubPage() {
   const [error, setError] = useState<string | null>(null)
 
   const language = (profile?.language ?? 'en')
-  const hasApiKey = Boolean(CONFIG.geminiApiKey)
 
   const handleGenerate = async () => {
-    if (!hasApiKey) {
-      setError('GEMINI_API_KEY is not configured. Add it to your .env file to generate quizzes.')
-      return
-    }
     setError(null)
     setIsGenerating(true)
     try {
@@ -235,14 +233,6 @@ function QuizHubPage() {
           </div>
         </div>
 
-        {!hasApiKey && (
-          <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-700 dark:bg-amber-950/40">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <p className="text-xs text-amber-800 dark:text-amber-200">
-              <strong>GEMINI_API_KEY not set.</strong> Add it to your <code>.env</code> to enable quiz generation.
-            </p>
-          </div>
-        )}
 
         {error && (
           <div className="flex items-start gap-2.5 rounded-xl border border-red-300 bg-red-50 p-3.5 dark:border-red-700 dark:bg-red-950/40">
