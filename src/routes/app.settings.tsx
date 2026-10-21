@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings, Globe, Calendar, User, ShieldAlert } from 'lucide-react'
+import { Settings, Globe, Calendar, User, ShieldAlert, Zap, RefreshCw, Check } from 'lucide-react'
 import { useAuth } from '../lib/auth-context.tsx'
+import {
+  generateSampleProgress,
+  saveAnswerHistory,
+  clearAnswerHistory,
+} from '../lib/demo-data.ts'
 
 export const Route = createFileRoute('/app/settings')({
   component: SettingsPage,
@@ -13,6 +18,7 @@ function SettingsPage() {
   const [examDate, setExamDate] = useState(profile?.exam_date || '')
   const [language, setLanguage] = useState<'en' | 'sw'>(profile?.language || 'en')
   const [isSaved, setIsSaved] = useState(false)
+  const [demoMessage, setDemoMessage] = useState<string | null>(null)
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,6 +29,19 @@ function SettingsPage() {
     })
     setIsSaved(true)
     setTimeout(() => setIsSaved(false), 3000)
+  }
+
+  const handleLoadDemo = () => {
+    const sample = generateSampleProgress()
+    saveAnswerHistory(sample)
+    setDemoMessage('Sample progress loaded! Check the Readiness page.')
+    setTimeout(() => setDemoMessage(null), 4000)
+  }
+
+  const handleClearDemo = () => {
+    clearAnswerHistory()
+    setDemoMessage('Progress history reset successfully.')
+    setTimeout(() => setDemoMessage(null), 4000)
   }
 
   return (
@@ -119,12 +138,47 @@ function SettingsPage() {
               Save Preferences
             </button>
             {isSaved && (
-              <span className="text-xs font-semibold text-teal-600 dark:text-teal-400">
-                Preferences saved successfully!
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400">
+                <Check className="h-4 w-4" /> Preferences saved!
               </span>
             )}
           </div>
         </form>
+      </div>
+
+      {/* Demo Data Controls */}
+      <div className="card-glass p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-2 font-bold text-[var(--text-main)]">
+          <Zap className="h-5 w-5 text-amber-500" />
+          <h2 className="text-sm font-bold">Demo Mode & Progress Data</h2>
+        </div>
+        <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+          Populate realistic sample quiz attempts across all 3 domains to explore the readiness charts, mastery rings, and study recommendations.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={handleLoadDemo}
+            className="flex items-center gap-2 rounded-xl border border-teal-600 bg-teal-50 px-4 py-2 text-xs font-bold text-teal-800 transition hover:bg-teal-100 dark:bg-teal-950/60 dark:text-teal-200"
+          >
+            <Zap className="h-4 w-4 text-amber-500" />
+            <span>Load Sample Progress</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleClearDemo}
+            className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2 text-xs font-semibold text-[var(--text-muted)] transition hover:text-red-600"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Reset Progress</span>
+          </button>
+          {demoMessage && (
+            <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">
+              {demoMessage}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Account Info */}
@@ -142,3 +196,4 @@ function SettingsPage() {
     </div>
   )
 }
+
