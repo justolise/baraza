@@ -58,7 +58,7 @@ export const generateQuiz = createServerFn({ method: 'POST' })
 
     // 3. Call AI
     if (!CONFIG.geminiApiKey) {
-      throw new Error('GEMINI_API_KEY is not configured on the server. Please check your .env file.')
+      throw new Error('Quiz generator is currently unavailable. Please try again shortly.')
     }
     const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
     const { text } = await generateText({
@@ -148,7 +148,11 @@ function QuizHubPage() {
       sessionStorage.setItem('somopal_quiz_topic', topicLabel)
       await navigate({ to: '/app/quiz/$quizId', params: { quizId: 'active' } })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate quiz. Please try again.')
+      const rawMsg = err instanceof Error ? err.message : ''
+      const friendlyMsg = rawMsg.includes('GEMINI_API_KEY') || !rawMsg
+        ? 'Unable to generate quiz questions right now. Please try again in a moment.'
+        : rawMsg
+      setError(friendlyMsg)
     } finally {
       setIsGenerating(false)
     }

@@ -4,7 +4,6 @@ import {
   BookOpen,
   Award,
   Sparkles,
-  AlertTriangle,
   Globe,
 } from 'lucide-react'
 
@@ -69,16 +68,18 @@ function AboutPage() {
         </div>
       </section>
 
-      {/* Integrity & Zero-Dumps Pledge */}
-      <section className="mt-14 rounded-3xl border border-red-200 bg-red-50/50 p-6 dark:border-red-900/50 dark:bg-red-950/20 sm:p-8">
+      {/* Integrity & Zero-Dumps Standard */}
+      <section className="mt-14 rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 sm:p-8">
         <div className="flex items-start gap-4">
-          <AlertTriangle className="mt-1 h-6 w-6 shrink-0 text-red-600 dark:text-red-400" />
-          <div className="space-y-2">
-            <h3 className="text-base font-bold text-red-950 dark:text-red-200">
-              Our Zero Exam-Dumps Integrity Pledge
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-base font-bold text-[var(--text-main)]">
+              Our Zero Exam-Dumps Integrity Standard
             </h3>
-            <p className="text-xs leading-relaxed text-red-900/90 dark:text-red-300/80">
-              Exam dumps violate Microsoft's non-disclosure agreements, undermine professional credibility, and lead to revoked certifications. <strong>SomoPal contains zero real exam questions or dump materials.</strong> All questions and scenarios are generated dynamically from our verified study notes to build deep conceptual competence that endures long after test day.
+            <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+              Exam dumps violate non-disclosure agreements and undermine professional credibility. <strong>SomoPal contains zero real exam questions or dump materials.</strong> Every question and scenario is generated dynamically from verified study notes to build deep, enduring conceptual competence.
             </p>
           </div>
         </div>

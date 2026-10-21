@@ -10,7 +10,6 @@ import {
   Square,
   Loader2,
   RefreshCw,
-  ChevronDown,
   BookOpen,
   AlertTriangle,
 } from 'lucide-react'
@@ -38,7 +37,7 @@ const askBuddy = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     if (!CONFIG.geminiApiKey) {
       throw new Error(
-        'GEMINI_API_KEY is not configured on the server. Please check your .env file.'
+        'The AI study buddy is currently unavailable. Please try again shortly.'
       )
     }
 
@@ -300,8 +299,6 @@ function BuddyPage() {
     }
   }
 
-  const hasApiKey = Boolean(CONFIG.geminiApiKey)
-
   return (
     <div className="flex h-[calc(100vh-9rem)] flex-col md:h-[calc(100vh-7rem)]">
       {/* ── Header ── */}
@@ -329,17 +326,6 @@ function BuddyPage() {
           </button>
         )}
       </div>
-
-      {/* ── API key warning ── */}
-      {!hasApiKey && (
-        <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-sm dark:border-amber-700 dark:bg-amber-950/50">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <p className="text-amber-800 dark:text-amber-200">
-            <strong>GEMINI_API_KEY not set.</strong> Add it to your <code>.env</code> to enable the AI
-            buddy. Retrieval still works for topic browsing.
-          </p>
-        </div>
-      )}
 
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto py-4 pr-1">
@@ -369,7 +355,6 @@ function BuddyPage() {
                 </button>
               ))}
             </div>
-            <ChevronDown className="animate-bounce text-[var(--text-muted)]" />
           </div>
         ) : (
           <div className="space-y-5">
