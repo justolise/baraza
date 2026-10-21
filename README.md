@@ -1,213 +1,193 @@
-Welcome to your new TanStack Start app!
+# SomoPal (Baraza) 🌍☁️
 
-# Getting Started
+> **UNOFFICIAL: NOT AFFILIATED WITH OR ENDORSED BY MICROSOFT**  
+> *SomoPal is an independent community study companion. All quiz questions, analogies, and study notes are 100% original educational content created specifically for African learners preparing for cloud fundamentals.*
 
-To run this application:
+[![TypeScript Strict](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
+[![Vitest](https://img.shields.io/badge/Tested%20with-Vitest-yellow.svg)](https://vitest.dev/)
+[![Tailwind CSS v4](https://img.shields.io/badge/TailwindCSS-v4-teal.svg)](https://tailwindcss.com/)
+[![TanStack Start](https://img.shields.io/badge/Framework-TanStack%20Start-red.svg)](https://tanstack.com/start)
 
+---
+
+## 📖 Overview
+
+**SomoPal** (from Swahili *Somo* = Lesson / Study + *Pal* = Companion) is an AI study buddy and exam readiness tracker for the **Microsoft Azure Fundamentals (AZ-900)** exam, designed to make cloud computing intuitive, memorable, and culturally resonant for learners across Africa.
+
+Most cloud certification materials assume familiarity with Western enterprise IT infrastructure (e.g., traditional on-premises data centers, corporate fiber, US billing models). SomoPal bridges this gap through **grounded African analogies**:
+- **Shared Responsibility Model** explained through *renting an apartment in Nairobi* (landlord maintains the roof and perimeter gates, but you lock your own front door).
+- **CapEx vs OpEx** explained via *buying a diesel generator vs purchasing KPLC prepaid electricity tokens*.
+- **Cloud Elasticity** explained through *M-Pesa transaction surges on Friday evening payday*.
+- **High Availability & Fault Tolerance** explained through *twin-engine matatus and multi-chama savings cooperatives*.
+- **Microservices & Containers** explained via *shipping containers at the Port of Mombasa*.
+
+---
+
+## 🚀 Key Features
+
+### 1. 🤖 Buddy Baraza (AI Study Companion)
+- Grounded in curated AZ-900 study notes via **vector embeddings & retrieval-augmented generation (RAG)**.
+- **Fixed 4-Card Structured Answer**:
+  1. **💡 In Simple Terms**: Plain language, jargon-free explanation.
+  2. **🌍 African Analogy**: Concrete, memorable real-world comparison.
+  3. **📋 Official Exam Definition**: Exact terminology Microsoft uses on the exam.
+  4. **⚠️ Watch Out / Exam Trap**: Common candidate pitfalls and distractor concepts.
+- **Dual Language**: Seamless toggle between **English** and **Kiswahili**.
+- **Rate-Limited & Guardrailed**: Enforces daily safety quotas and prevents exam-dump queries.
+
+### 2. 📚 Topic Catalog & Deep-Dive Notes (`/app/topics`)
+- Complete coverage of all 3 official AZ-900 exam domains:
+  - **Describe Cloud Concepts** (28% of exam)
+  - **Describe Azure Architecture & Services** (35% of exam)
+  - **Describe Azure Management & Governance** (30% of exam)
+- 31 curated core topics with analogies, key terms, and comprehensive study notes.
+
+### 3. 📝 Zod-Validated Quiz Engine (`/app/quiz`)
+- Generate practice quizzes by topic or mixed-domain mock exams.
+- Immediate option-by-option explanations.
+- Exam-style review page with scoring breakdown and **"Explain it differently"** AI re-explanation feature.
+
+### 4. 📊 Readiness Scoring Engine (`/app/readiness`)
+- **Recency-Weighted Accuracy**: Newer answers are weighted more heavily ($0.9^i$ decay factor) so recent improvements boost readiness.
+- **Coverage Factor**: $\min(1.0, \text{attempts} / 6)$ guarantees you cannot score 100% readiness from just one lucky question.
+- **Official Domain Weighting**: 28% Cloud Concepts, 35% Architecture, 30% Management.
+- **Passing Threshold**: 70% threshold correlating to AZ-900's 700/1000 passing mark.
+- **Readiness Bands**: `'Not yet'` (<50%), `'Getting there'` (50–69%), `'Almost ready'` (70–84%), `'Ready'` (≥85%).
+- **Top 3 Next-Up Recommendations**: Pinpoints exactly what to practice next to maximize score velocity.
+- **Demo Mode**: One-click "Load Sample Progress" button to test and evaluate realistic analytics instantly.
+
+### 5. ⚙️ Preferences & Kiswahili Support (`/app/settings`)
+- Target exam date countdown with daily pace recommendations.
+- Language selector (**English** vs **Kiswahili**).
+- Guest anonymous sign-in or persistent Supabase Auth.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | [TanStack Start](https://tanstack.com/start) (React 19, Nitro server engine) |
+| **Routing** | [TanStack Router](https://tanstack.com/router) with flat dot-notation route files |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) with custom ochre/teal design system |
+| **Icons** | [Lucide React](https://lucide.dev/) (generic cloud icons only) |
+| **Database & Auth** | [Supabase](https://supabase.com/) Postgres + pgvector + strict RLS |
+| **AI SDK** | [Vercel AI SDK v7](https://sdk.vercel.ai/) with Google Gemini (`@ai-sdk/google`) |
+| **Testing** | [Vitest](https://vitest.dev/) for unit and scoring algorithm test suites |
+| **Validation** | [Zod v4](https://zod.dev/) for schema-enforced AI quiz generation |
+
+---
+
+## 📐 Readiness Scoring Algorithm Specification
+
+The readiness score is calculated using pure functions in `src/lib/readiness.ts`:
+
+1. **Topic Recency-Weighted Accuracy**:
+   For $n$ chronological answer attempts on topic $t$, with index $i = 0$ being the most recent:
+   $$w_i = 0.9^i$$
+   $$\text{weightedAccuracy} = \frac{\sum_{i=0}^{n-1} w_i \cdot \mathbb{I}(\text{isCorrect}_i)}{\sum_{i=0}^{n-1} w_i}$$
+
+2. **Topic Coverage Factor**:
+   $$\text{coverage} = \min\left(1.0, \frac{n}{6}\right)$$
+
+3. **Topic Effective Mastery**:
+   $$\text{mastery}_t = \text{round}(\text{weightedAccuracy} \times \text{coverage} \times 100)$$
+
+4. **Domain Score**:
+   $$\text{domainMastery}_d = \frac{1}{|T_d|} \sum_{t \in T_d} \text{mastery}_t$$
+
+5. **Overall Readiness Score**:
+   $$\text{overallScore} = \text{round}\left( \frac{\sum_d \text{domainMastery}_d \cdot \text{weight}_d}{\sum_d \text{weight}_d} \right)$$
+   where $\text{weight}_{\text{concepts}} = 28$, $\text{weight}_{\text{architecture}} = 35$, $\text{weight}_{\text{management}} = 30$.
+
+---
+
+## 💻 Local Development Setup
+
+### 1. Prerequisites
+- Node.js 20+
+- `pnpm` 9+
+
+### 2. Installation
 ```bash
+git clone https://github.com/your-org/somopal.git
+cd somopal
 pnpm install
-pnpm dev
 ```
 
-# Building For Production
+### 3. Environment Configuration
+Copy the example environment file:
+```bash
+cp .env.example .env
+```
+Fill in the credentials:
+```env
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-To build this application for production:
+# Gemini AI (Vercel AI SDK)
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODEL=gemini-2.0-flash
+EMBEDDING_MODEL=text-embedding-004
+EMBEDDING_DIM=768
+
+# RAG & Rate Limits
+RATE_LIMIT_DAILY_MESSAGES=25
+RETRIEVAL_SIMILARITY_THRESHOLD=0.65
+RETRIEVAL_MATCH_COUNT=4
+```
+
+### 4. Supabase Migrations & Vector Setup
+Run the SQL migrations in `supabase/migrations/`:
+- `001_schema.sql`: Core tables, constraints, foreign keys
+- `002_rls.sql`: Strict Row-Level Security policies (`user_id = auth.uid()`)
+- `003_match_chunks.sql`: pgvector cosine similarity RPC
+
+### 5. Running the App
+```bash
+pnpm dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🧪 Testing & Validation
+
+Run the complete test suite, linter, and type checker:
 
 ```bash
+# Pure scoring unit tests
+pnpm test
+
+# TypeScript strict mode verification
+pnpm typecheck
+
+# ESLint inspection
+pnpm lint
+
+# Production build bundle
 pnpm build
 ```
 
-## Styling
+---
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+## 🚢 Deploying to Vercel
 
-### Removing Tailwind CSS
+1. Push your repository to GitHub or GitLab.
+2. Import the project in the [Vercel Dashboard](https://vercel.com/new).
+3. Vercel automatically detects the TanStack Start framework (supported by the included `vercel.json`).
+4. Set the environment variables in **Settings > Environment Variables**:
+   - `GEMINI_API_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+5. Click **Deploy**. Nitro builds the production bundle and deploys server routes as Vercel Edge/Serverless Functions.
 
-If you prefer not to use Tailwind CSS:
+---
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Remove `@tailwindcss/vite` and `tailwindcss` from `package.json`
+## ⚖️ Legal & Trademark Notice
 
-## Linting & Formatting
-
-
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
-
-```bash
-pnpm lint
-pnpm format
-pnpm check
-```
-
-
-## Deploy to Vercel
-
-1. Push this repo to GitHub, GitLab, or Bitbucket
-2. In Vercel, choose **Add New > Project** and import the repo
-3. Keep the detected TanStack Start framework settings
-4. Add production values from `.env.example` under **Settings > Environment Variables**
-5. Deploy
-
-Vercel runs the build script and deploys Nitro's output as Vercel Functions and
-static assets. The included `vercel.json` makes framework detection explicit.
-
-Variables prefixed with `VITE_` are included in the browser bundle. Keep secrets
-unprefixed so they remain server-only.
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+*Microsoft, Azure, and other Microsoft trademarks are trademarks of the Microsoft group of companies. SomoPal is an independent open educational resource and is not affiliated with, endorsed by, or sponsored by Microsoft Corporation. All practice questions and pedagogical analogies are original works.*
