@@ -36,14 +36,9 @@ export default function Header() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-700 to-teal-900 text-white shadow-md transition-transform group-hover:scale-105">
               <Cloud className="h-5 w-5 text-teal-200" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-display text-lg font-bold tracking-tight text-[var(--text-main)]">
-                SomoPal
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                Unofficial AZ-900
-              </span>
-            </div>
+            <span className="font-display text-xl font-bold tracking-tight text-[var(--text-main)]">
+              SomoPal
+            </span>
           </Link>
         </div>
 

@@ -1,7 +1,6 @@
 // About Page for SomoPal
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
-  ShieldAlert,
   BookOpen,
   Award,
   Sparkles,
@@ -14,21 +13,6 @@ export const Route = createFileRoute('/about')({ component: AboutPage })
 function AboutPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16">
-      {/* Prominent Unofficial Disclaimer Banner */}
-      <div className="mb-10 rounded-2xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-900/60 dark:bg-amber-950/40">
-        <div className="flex items-start gap-3">
-          <ShieldAlert className="mt-0.5 h-6 w-6 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold text-amber-950 dark:text-amber-200">
-              Unofficial: Not affiliated with or endorsed by Microsoft Corporation.
-            </h3>
-            <p className="text-xs leading-relaxed text-amber-900/90 dark:text-amber-300/80">
-              Microsoft, Azure, and other Microsoft product names or trademarks mentioned in this educational application belong exclusively to Microsoft Corporation. SomoPal is an independent community study companion designed for educational purposes. We use generic cloud icons and do not utilize Microsoft or Azure trademarks or logos.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Main Title & Mission */}
       <div className="space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-semibold text-teal-800 dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300">

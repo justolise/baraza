@@ -477,8 +477,8 @@ function BuddyPage() {
             </button>
           )}
         </div>
-        <p className="mt-1.5 text-center text-[10px] text-[var(--text-muted)]">
-          Unofficial: not affiliated with or endorsed by Microsoft · Answers grounded in study notes
+        <p className="mt-1.5 text-center text-[11px] text-[var(--text-muted)]">
+          Grounded in AZ-900 study notes · Explanations tailored with African analogies
         </p>
       </div>
     </div>

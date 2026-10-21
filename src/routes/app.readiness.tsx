@@ -10,7 +10,6 @@ import {
   Calendar,
   TrendingUp,
   Target,
-  AlertCircle,
   RefreshCw,
   Zap,
   ChevronDown,
@@ -562,14 +561,6 @@ function ReadinessPage() {
                 <span className="text-sm font-semibold text-[var(--text-main)]">Set Exam Date</span>
               </div>
             </Link>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="flex items-start gap-2 rounded-xl border border-[var(--border-subtle)] p-4 bg-[var(--bg-surface)]">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-muted)]" />
-            <p className="text-xs leading-relaxed text-[var(--text-muted)]">
-              {report.disclaimer} Unofficial: not affiliated with or endorsed by Microsoft. Official exam eligibility and score reporting is administered solely by Microsoft and Pearson VUE.
-            </p>
           </div>
         </>
       )}

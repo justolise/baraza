@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Settings, Globe, Calendar, User, ShieldAlert, Zap, RefreshCw, Check } from 'lucide-react'
+import { Settings, Globe, Calendar, User, Zap, RefreshCw, Check } from 'lucide-react'
 import { useAuth } from '../lib/auth-context.tsx'
 import {
   generateSampleProgress,
@@ -184,7 +184,7 @@ function SettingsPage() {
       {/* Account Info */}
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 text-xs text-[var(--text-muted)]">
         <div className="flex items-center gap-2 font-bold text-[var(--text-main)]">
-          <ShieldAlert className="h-4 w-4 text-amber-600" />
+          <User className="h-4 w-4 text-teal-600 dark:text-teal-400" />
           <span>Account Status: {isGuest ? 'Guest Anonymous Account' : 'Authenticated User'}</span>
         </div>
         <p className="mt-1 leading-relaxed">

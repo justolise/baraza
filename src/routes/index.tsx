@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import {
   Sparkles,
-  ShieldAlert,
   ArrowRight,
   TrendingUp,
   HelpCircle,
@@ -58,13 +57,6 @@ function LandingPage() {
     <div className="flex flex-col gap-16 py-8 md:gap-24 md:py-12">
       {/* Hero Section */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
-        {/* Unofficial Banner */}
-        <div className="mx-auto mb-8 flex max-w-3xl items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50/90 px-4 py-2 text-center text-xs font-semibold text-amber-900 shadow-xs dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-          <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span>
-            Unofficial: not affiliated with or endorsed by Microsoft. Generic cloud icons used.
-          </span>
-        </div>
 
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-xs font-semibold text-teal-800 shadow-xs dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300">
