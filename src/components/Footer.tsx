@@ -1,6 +1,6 @@
 // Footer component for SomoPal
 import { Link } from '@tanstack/react-router'
-import { Cloud, Heart, ShieldAlert, BookOpen } from 'lucide-react'
+import { Cloud, Heart, BookOpen } from 'lucide-react'
 
 export default function Footer() {
   const year = new Date().getFullYear()
@@ -8,20 +8,6 @@ export default function Footer() {
   return (
     <footer className="mt-20 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 pb-20 pt-12 text-sm text-[var(--text-muted)] md:pb-12">
       <div className="mx-auto max-w-7xl">
-        {/* Top Disclaimer Alert Box */}
-        <div className="mb-10 rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-            <div className="text-xs leading-relaxed text-amber-900 dark:text-amber-200">
-              <p className="font-bold">
-                Unofficial: not affiliated with or endorsed by Microsoft.
-              </p>
-              <p className="mt-0.5 text-amber-800/90 dark:text-amber-300/80">
-                SomoPal is an independent open study companion built for African learners preparing for the Microsoft Azure Fundamentals (AZ-900) certification. All quiz questions and study notes are 100% original, generated from educational notes, and strictly avoid real exam questions or exam-dump materials.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Links Grid */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">

@@ -10,15 +10,27 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { z } from 'zod'
-import { generateText } from 'ai'
+import { generateText, Output } from 'ai'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { retrieveChunks, formatContext } from '../lib/rag.ts'
 import { buildQuizGenerationPrompt } from '../lib/prompts.ts'
 import { CONFIG } from '../lib/config.ts'
 import { useAuth } from '../lib/auth-context.tsx'
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types & Schema ───────────────────────────────────────────────────────────
 import type { QuizQuestion } from '../lib/quiz-types.ts'
+
+const quizItemSchema = z.object({
+  stem: z.string(),
+  options: z.array(z.string()),
+  correctIndex: z.number().int().min(0).max(3),
+  explanation: z.string(),
+  optionExplanations: z.array(z.string()),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  topicSlug: z.string(),
+})
+
+const quizSchema = z.array(quizItemSchema)
 
 export const Route = createFileRoute('/app/quiz')({
   validateSearch: z.object({ topic: z.string().optional() }),
@@ -55,40 +67,40 @@ export const generateQuiz = createServerFn({ method: 'POST' })
       language: data.language,
     })
 
-    // 3. Call AI
+    // 3. Call AI with structured object schema & high token ceiling
     if (!CONFIG.geminiApiKey) {
       throw new Error('Quiz generator is currently unavailable. Please try again shortly.')
     }
     const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
-    const { text } = await generateText({
-      model: google(CONFIG.geminiModel),
-      prompt,
-      maxOutputTokens: 4000,
-    })
 
-    // 4. Parse JSON — robust against markdown fences, trailing commas, extra prose
+    async function callModel(modelName: string) {
+      const { output } = await generateText({
+        model: google(modelName),
+        output: Output.object({ schema: quizSchema }),
+        prompt,
+        maxOutputTokens: 8192,
+      })
+      return output
+    }
+
     try {
-      // Strip any markdown code fences
-      let cleaned = text
-        .replace(/```json\s*/gi, '')
-        .replace(/```\s*/g, '')
-        .trim()
-
-      // Extract the first JSON array or object from the response
-      const arrayMatch = cleaned.match(/\[\s*\{[\s\S]*\}\s*\]/)
-      const objectMatch = cleaned.match(/\{[\s\S]*\}/)
-      const jsonStr = arrayMatch?.[0] ?? objectMatch?.[0] ?? cleaned
-
-      const parsed = JSON.parse(jsonStr) as QuizQuestion[] | { questions: QuizQuestion[] }
-      const questions = Array.isArray(parsed) ? parsed : parsed.questions
+      let questions: z.infer<typeof quizSchema>
+      try {
+        questions = await callModel(CONFIG.geminiModel)
+      } catch (primaryErr) {
+        console.warn('Primary model quiz generation failed, attempting fallback:', primaryErr)
+        questions = await callModel(CONFIG.geminiFallbackModel)
+      }
 
       if (!Array.isArray(questions) || questions.length === 0) {
         throw new Error('No questions returned. Please try again.')
       }
-      return questions
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : ''
-      if (msg.startsWith('No questions')) throw e
+
+      return questions as unknown as QuizQuestion[]
+    } catch (err) {
+      console.error('Quiz generation error:', err)
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.startsWith('No questions')) throw err
       throw new Error('Could not generate quiz questions. Please try a different topic or try again.')
     }
   })
