@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "test": "vitest run --config vitest.config.ts",
+    "db:migrate": "./scripts/run-migrations.sh",
     "seed": "tsx scripts/seed.ts",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check ."
