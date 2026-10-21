@@ -1,6 +1,6 @@
 // Footer component for SomoPal
 import { Link } from '@tanstack/react-router'
-import { Cloud, Heart, BookOpen } from 'lucide-react'
+import { Heart, BookOpen } from 'lucide-react'
 
 export default function Footer() {
   const year = new Date().getFullYear()
@@ -13,10 +13,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-800 text-white">
-                <Cloud className="h-4 w-4 text-teal-200" />
-              </div>
-              <span className="font-display font-bold text-[var(--text-main)]">SomoPal</span>
+              <span className="font-display text-lg font-bold text-[var(--text-main)]">SomoPal</span>
             </div>
             <p className="text-xs leading-relaxed">
               Your AI study buddy for AZ-900, grounded in everyday African analogies and structured learning loops.

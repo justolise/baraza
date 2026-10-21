@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Cloud, Globe, LogIn, LogOut, Menu, User as UserIcon, X } from 'lucide-react'
+import { Globe, LogIn, LogOut, Menu, User as UserIcon, X } from 'lucide-react'
 import ThemeToggle from './ThemeToggle.tsx'
 import SignInModal from './SignInModal.tsx'
 import { useAuth } from '../lib/auth-context.tsx'
@@ -21,13 +21,10 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/90 px-4 backdrop-blur-md transition-colors">
         <div className="mx-auto flex max-w-7xl items-center justify-between py-3">
-          {/* Brand Logo with Generic Cloud Icon */}
+          {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <Link to="/" className="group flex items-center gap-2.5 no-underline">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-700 to-teal-900 text-white shadow-md transition-transform group-hover:scale-105">
-                <Cloud className="h-5 w-5 text-teal-200" />
-              </div>
-              <span className="font-display text-xl font-bold tracking-tight text-[var(--text-main)]">
+            <Link to="/" className="group flex items-center no-underline">
+              <span className="font-display text-xl font-bold tracking-tight text-[var(--text-main)] transition-colors hover:text-teal-700 dark:hover:text-teal-300">
                 SomoPal
               </span>
             </Link>
