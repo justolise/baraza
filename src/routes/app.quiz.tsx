@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Loader2,
   AlertTriangle,
-  RefreshCw,
 } from 'lucide-react'
 import { z } from 'zod'
 import { generateText } from 'ai'
@@ -67,13 +66,30 @@ export const generateQuiz = createServerFn({ method: 'POST' })
       maxOutputTokens: 4000,
     })
 
-    // 4. Parse JSON
+    // 4. Parse JSON — robust against markdown fences, trailing commas, extra prose
     try {
-      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned) as QuizQuestion[] | { questions: QuizQuestion[] }
-      return Array.isArray(parsed) ? parsed : parsed.questions
-    } catch {
-      throw new Error('AI returned invalid JSON. Please try again.')
+      // Strip any markdown code fences
+      let cleaned = text
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim()
+
+      // Extract the first JSON array or object from the response
+      const arrayMatch = cleaned.match(/\[\s*\{[\s\S]*\}\s*\]/)
+      const objectMatch = cleaned.match(/\{[\s\S]*\}/)
+      const jsonStr = arrayMatch?.[0] ?? objectMatch?.[0] ?? cleaned
+
+      const parsed = JSON.parse(jsonStr) as QuizQuestion[] | { questions: QuizQuestion[] }
+      const questions = Array.isArray(parsed) ? parsed : parsed.questions
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error('No questions returned. Please try again.')
+      }
+      return questions
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : ''
+      if (msg.startsWith('No questions')) throw e
+      throw new Error('Could not generate quiz questions. Please try a different topic or try again.')
     }
   })
 
@@ -168,7 +184,7 @@ function QuizHubPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">AZ-900 Quiz Center</h1>
           <p className="text-xs text-[var(--text-muted)]">
-            Original AI-generated questions grounded in study notes · Never real exam dumps
+            AI-generated questions grounded in study notes
           </p>
         </div>
       </div>
@@ -265,30 +281,14 @@ function QuizHubPage() {
         </button>
       </div>
 
-      {/* Quick links to topics */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
-        <h3 className="mb-3 text-sm font-bold text-[var(--text-main)]">Study a topic first?</h3>
-        <div className="flex flex-wrap gap-2">
-          {TOPIC_OPTIONS.slice(1, 7).map((t) => (
-            <Link
-              key={t.slug}
-              to="/app/topics/$slug"
-              params={{ slug: t.slug }}
-              className="flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] hover:border-teal-400 hover:text-teal-700 dark:hover:text-teal-400"
-            >
-              {t.label}
-              <ChevronRight className="h-3 w-3" />
-            </Link>
-          ))}
-          <Link
-            to="/app/topics"
-            className="flex items-center gap-1.5 rounded-lg border border-teal-300 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-400 dark:hover:bg-teal-950/40"
-          >
-            All topics
-            <RefreshCw className="h-3 w-3" />
-          </Link>
-        </div>
-      </div>
+      {/* Browse topics link */}
+      <Link
+        to="/app/topics"
+        className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-3 text-xs font-semibold text-[var(--text-muted)] transition hover:border-teal-400 hover:text-teal-700 dark:hover:text-teal-400"
+      >
+        Browse all 31 study topics
+        <ChevronRight className="h-3.5 w-3.5" />
+      </Link>
     </div>
   )
 }
