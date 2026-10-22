@@ -2,6 +2,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { BookOpen, ChevronRight, Search } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/topics/')({
   component: TopicsPage,
@@ -93,6 +94,7 @@ const colorMap: Record<string, { border: string; bg: string; badge: string; text
 export { DOMAINS }
 
 function TopicsPage() {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const q = query.toLowerCase()
 
@@ -118,10 +120,10 @@ function TopicsPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">
-              AZ-900 Topic Catalog
+              {t('topics.title')}
             </h1>
             <p className="text-xs text-[var(--text-muted)]">
-              {totalTopics} topics across 3 exam domains &middot; Click a topic to study
+              {totalTopics} {t('topics.topics_count')}
             </p>
           </div>
         </div>
@@ -133,7 +135,7 @@ function TopicsPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search topics&hellip;"
+            placeholder={t('topics.search')}
             className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-2 pl-9 pr-3 text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
           />
         </div>

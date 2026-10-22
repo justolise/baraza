@@ -16,9 +16,13 @@ import {
   TrendingUp,
   HelpCircle,
   Award,
+  Copy,
+  Check,
 } from 'lucide-react'
 import type { QuizQuestion } from '../lib/quiz-types.ts'
 import { MarkdownContent } from '../components/MarkdownContent.tsx'
+import { useToast } from '../lib/toast-context.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/quiz/$quizId/results')({
   component: QuizResultsPage,
@@ -83,6 +87,9 @@ function QuizResultsPage() {
   const [topicLabel, setTopicLabel] = useState('AZ-900 Quiz')
   const [expandedIdxs, setExpandedIdxs] = useState<Set<number>>(new Set())
   const [filter, setFilter] = useState<FilterMode>('all')
+  const [copiedSummary, setCopiedSummary] = useState(false)
+  const { toast } = useToast()
+  const { t, language } = useTranslation()
 
   useEffect(() => {
     const rawQ = sessionStorage.getItem('somopal_quiz')
@@ -127,7 +134,22 @@ function QuizResultsPage() {
 
   const handleRetry = () => {
     sessionStorage.removeItem('somopal_quiz_answers')
+    toast.info('Restarting quiz session...', 'Quiz Retake')
     void navigate({ to: '/app/quiz/$quizId', params: { quizId: 'active' } })
+  }
+
+  const handleCopySummary = async () => {
+    try {
+      const summaryText = `SomoPal AZ-900 Quiz: ${topicLabel}\nScore: ${score}% (${correctCount}/${questions.length} correct)\nStatus: ${
+        score >= 70 ? 'Passed (AZ-900 Benchmark)' : 'Needs Review'
+      }\nReviewed on SomoPal: https://somopal.vercel.app`
+      await navigator.clipboard.writeText(summaryText)
+      setCopiedSummary(true)
+      toast.success('Quiz results summary copied to clipboard!', 'Summary Copied')
+      setTimeout(() => setCopiedSummary(false), 2500)
+    } catch {
+      toast.error('Unable to copy summary to clipboard')
+    }
   }
 
   const toggleExpand = (idx: number) => {
@@ -166,7 +188,7 @@ function QuizResultsPage() {
             </div>
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                Quiz Summary
+                {t('results.title')}
               </span>
               <h1 className="font-display text-xl font-bold text-[var(--text-main)] sm:text-2xl">
                 {topicLabel}
@@ -187,15 +209,15 @@ function QuizResultsPage() {
         <div className="mt-6 grid grid-cols-3 divide-x divide-[var(--border-subtle)] rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <div className="py-3 text-center">
             <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{correctCount}</p>
-            <p className="text-xs text-[var(--text-muted)]">Correct</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('results.correct')}</p>
           </div>
           <div className="py-3 text-center">
             <p className="text-xl font-black text-red-600 dark:text-red-400">{incorrectCount}</p>
-            <p className="text-xs text-[var(--text-muted)]">Incorrect</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('results.incorrect')}</p>
           </div>
           <div className="py-3 text-center">
             <p className="text-xl font-black text-[var(--text-muted)]">{skippedCount}</p>
-            <p className="text-xs text-[var(--text-muted)]">Skipped</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('results.skipped')}</p>
           </div>
         </div>
 
@@ -204,14 +226,15 @@ function QuizResultsPage() {
           <div className="flex items-center gap-2.5">
             <TrendingUp className="h-4 w-4 shrink-0 text-teal-600 dark:text-teal-400" />
             <span>
-              Your responses have updated your <strong>AZ-900 Exam Readiness</strong> profile.
+              {language === 'sw' ? 'Majibu yako yameongezwa kwenye wasifu wako wa ' : 'Your responses have updated your '}
+              <strong>{language === 'sw' ? 'Utayari wa Mtihani wa AZ-900' : 'AZ-900 Exam Readiness'}</strong>.
             </span>
           </div>
           <Link
             to="/app/readiness"
             className="flex shrink-0 items-center gap-1 font-bold text-teal-700 hover:underline dark:text-teal-300"
           >
-            Track Readiness <ArrowRight className="h-3.5 w-3.5" />
+            {language === 'sw' ? 'Kipimo cha Utayari' : 'Track Readiness'} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
@@ -219,7 +242,7 @@ function QuizResultsPage() {
         {weakTopics.length > 0 && (
           <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40 dark:bg-amber-950/30">
             <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              📚 Recommended Topics to Review:
+              📚 {t('ready.weak_topics')}:
             </p>
             <div className="flex flex-wrap gap-2">
               {weakTopics.map((slug) => (
@@ -245,21 +268,37 @@ function QuizResultsPage() {
             className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2.5 text-sm font-bold text-[var(--text-main)] shadow-sm transition hover:bg-[var(--primary-light)]"
           >
             <RefreshCw className="h-4 w-4 text-teal-600" />
-            Retry This Quiz
+            {t('results.retry')}
+          </button>
+          <button
+            onClick={() => void handleCopySummary()}
+            className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2.5 text-sm font-bold text-[var(--text-main)] shadow-sm transition hover:bg-[var(--primary-light)]"
+          >
+            {copiedSummary ? (
+              <>
+                <Check className="h-4 w-4 text-emerald-600" />
+                <span className="text-emerald-600">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 text-[var(--text-muted)]" />
+                <span>{t('results.copy_summary')}</span>
+              </>
+            )}
           </button>
           <Link
             to="/app/quiz"
             className="flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-amber-700"
           >
             <Star className="h-4 w-4" />
-            Configure New Quiz
+            {t('results.new_quiz')}
           </Link>
           <Link
             to="/app/buddy"
             className="flex items-center gap-2 rounded-xl border border-teal-500/50 bg-teal-50 px-4 py-2.5 text-sm font-bold text-teal-800 shadow-sm transition hover:bg-teal-100 dark:bg-teal-950/60 dark:text-teal-200"
           >
             <Sparkles className="h-4 w-4 text-amber-500" />
-            Discuss with Study Buddy
+            {t('results.discuss_buddy')}
           </Link>
         </div>
       </div>
@@ -269,10 +308,12 @@ function QuizResultsPage() {
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h2 className="font-display text-lg font-bold text-[var(--text-main)]">
-              Detailed Question Review
+              {t('results.review_title')}
             </h2>
             <p className="text-xs text-[var(--text-muted)]">
-              Each question has verified Azure explanations and distractor analyses
+              {language === 'sw'
+                ? 'Kila swali lina maelezo yaliyothibitishwa ya Azure na uchambuzi wa machaguo'
+                : 'Each question has verified Azure explanations and distractor analyses'}
             </p>
           </div>
 
@@ -287,7 +328,7 @@ function QuizResultsPage() {
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
-                All ({questions.length})
+                {t('results.filter_all')} ({questions.length})
               </button>
               <button
                 onClick={() => setFilter('incorrect')}
@@ -297,7 +338,7 @@ function QuizResultsPage() {
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
-                Missed ({incorrectCount})
+                {t('results.filter_missed')} ({incorrectCount})
               </button>
               <button
                 onClick={() => setFilter('correct')}
@@ -307,7 +348,7 @@ function QuizResultsPage() {
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
-                Correct ({correctCount})
+                {t('results.filter_correct')} ({correctCount})
               </button>
             </div>
 
@@ -441,7 +482,7 @@ function QuizResultsPage() {
                                     </span>
                                   )}
                                 </div>
-                                {q.optionExplanations?.[optIdx] && (
+                                {q.optionExplanations[optIdx] && (
                                   <p className="mt-1 leading-relaxed text-[var(--text-muted)]">
                                     {q.optionExplanations[optIdx]}
                                   </p>

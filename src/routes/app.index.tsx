@@ -10,6 +10,7 @@ import {
   Compass,
 } from 'lucide-react'
 import { useAuth } from '../lib/auth-context.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/')({
   component: AppDashboard,
@@ -20,29 +21,29 @@ function getTimeGreeting(language: 'en' | 'sw'): { greeting: string; subGreeting
 
   if (hour >= 5 && hour < 12) {
     return language === 'sw'
-      ? { greeting: 'Habari za Asubuhi', subGreeting: 'Good morning! Ready for today’s cloud study?' }
+      ? { greeting: 'Habari za Asubuhi', subGreeting: 'Uko tayari kwa masomo ya leo ya wingu la Azure?' }
       : { greeting: 'Good Morning', subGreeting: 'Habari za asubuhi! Let’s build your Azure skills today.' }
   } else if (hour >= 12 && hour < 17) {
     return language === 'sw'
-      ? { greeting: 'Habari za Mchana', subGreeting: 'Good afternoon! Keep up the revision momentum.' }
+      ? { greeting: 'Habari za Mchana', subGreeting: 'Endelea na bidii ya marudio ya mtihani wa AZ-900.' }
       : { greeting: 'Good Afternoon', subGreeting: 'Habari za mchana! Time for a quick quiz session.' }
   } else if (hour >= 17 && hour < 22) {
     return language === 'sw'
-      ? { greeting: 'Habari za Jioni', subGreeting: 'Good evening! Wind down with an AI study chat.' }
+      ? { greeting: 'Habari za Jioni', subGreeting: 'Tulia na upitie mada na msaidizi wako Baraza.' }
       : { greeting: 'Good Evening', subGreeting: 'Habari za jioni! Review your daily topic progress.' }
   } else {
     return language === 'sw'
-      ? { greeting: 'Habari za Usiku', subGreeting: 'Late night revision! Keep focused and rest well.' }
+      ? { greeting: 'Habari za Usiku', subGreeting: 'Masomo ya usiku! Maandalizi thabiti huleta ufaulu.' }
       : { greeting: 'Late Night Study', subGreeting: 'Habari za usiku! Steady preparation builds mastery.' }
   }
 }
 
 function AppDashboard() {
   const { profile, isGuest } = useAuth()
-  const language = profile?.language || 'en'
+  const { t, language } = useTranslation()
   const { greeting, subGreeting } = getTimeGreeting(language)
 
-  const displayName = profile?.display_name || (isGuest ? 'Learner (Guest)' : 'Learner')
+  const displayName = profile?.display_name || (isGuest ? (language === 'sw' ? 'Mwanafunzi (Mgeni)' : 'Learner (Guest)') : (language === 'sw' ? 'Mwanafunzi' : 'Learner'))
 
   // Calculate days to exam if set
   let daysToExam: number | null = null
@@ -64,7 +65,7 @@ function AppDashboard() {
             </h1>
             {isGuest && (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
-                Guest Mode
+                {t('dash.guest')}
               </span>
             )}
           </div>
@@ -79,7 +80,9 @@ function AppDashboard() {
           >
             <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             <span>
-              {daysToExam !== null ? `${daysToExam} days to exam` : 'Set exam target date'}
+              {daysToExam !== null
+                ? `${daysToExam} ${t('dash.days_to_exam')}`
+                : t('dash.set_exam_date')}
             </span>
           </Link>
         </div>
@@ -97,17 +100,17 @@ function AppDashboard() {
               <Sparkles className="h-6 w-6 text-amber-300" />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
-              1. Explain
+              {t('dash.card1.step')}
             </span>
             <h3 className="font-display text-xl font-bold text-[var(--text-main)]">
-              Ask Buddy Baraza
+              {t('dash.card1.title')}
             </h3>
             <p className="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
-              Grounded AI answers structured into Simple, African Analogy, Exam Definition, and Watch Out cards.
+              {t('dash.card1.desc')}
             </p>
           </div>
           <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-teal-700 dark:text-teal-400">
-            <span>Start studying</span>
+            <span>{t('dash.card1.cta')}</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </div>
         </Link>
@@ -122,17 +125,17 @@ function AppDashboard() {
               <CheckSquare className="h-6 w-6 text-amber-100" />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              2. Test
+              {t('dash.card2.step')}
             </span>
             <h3 className="font-display text-xl font-bold text-[var(--text-main)]">
-              Take Practice Quiz
+              {t('dash.card2.title')}
             </h3>
             <p className="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
-              Original multiple-choice questions with per-option feedback. Test your knowledge across all 3 domains.
+              {t('dash.card2.desc')}
             </p>
           </div>
           <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-            <span>Launch quiz engine</span>
+            <span>{t('dash.card2.cta')}</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </div>
         </Link>
@@ -147,17 +150,17 @@ function AppDashboard() {
               <Award className="h-6 w-6 text-teal-200" />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
-              3. Measure
+              {t('dash.card3.step')}
             </span>
             <h3 className="font-display text-xl font-bold text-[var(--text-main)]">
-              Readiness Score
+              {t('dash.card3.title')}
             </h3>
             <p className="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">
-              View your overall exam readiness score, domain weight breakdowns, and top weak topics to practice next.
+              {t('dash.card3.desc')}
             </p>
           </div>
           <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-teal-700 dark:text-teal-400">
-            <span>View score breakdown</span>
+            <span>{t('dash.card3.cta')}</span>
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
           </div>
         </Link>
@@ -175,10 +178,10 @@ function AppDashboard() {
             </div>
             <div>
               <h4 className="text-sm font-bold text-[var(--text-main)]">
-                Topic Catalog
+                {t('dash.card_topics.title')}
               </h4>
               <p className="text-xs text-[var(--text-muted)]">
-                Browse all 31 AZ-900 exam topics and grounded study notes
+                {t('dash.card_topics.desc')}
               </p>
             </div>
           </div>
@@ -195,10 +198,10 @@ function AppDashboard() {
             </div>
             <div>
               <h4 className="text-sm font-bold text-[var(--text-main)]">
-                Preferences & Demo Mode
+                {t('dash.card_settings.title')}
               </h4>
               <p className="text-xs text-[var(--text-muted)]">
-                Toggle Swahili, set your exam date, or load sample progress
+                {t('dash.card_settings.desc')}
               </p>
             </div>
           </div>

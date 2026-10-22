@@ -12,14 +12,19 @@ import {
   RefreshCw,
   BookOpen,
   AlertTriangle,
+  Copy,
+  Check,
 } from 'lucide-react'
 import { z } from 'zod'
 import { useAuth } from '../lib/auth-context.tsx'
+import { useToast } from '../lib/toast-context.tsx'
 import { retrieveChunks, formatContext } from '../lib/rag.ts'
 import { buildBuddySystemPrompt } from '../lib/prompts.ts'
 import { CONFIG } from '../lib/config.ts'
 import { MarkdownContent } from '../components/MarkdownContent.tsx'
 import { createChatSession, saveChatMessage } from '../lib/history.ts'
+
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/buddy')({
   component: BuddyPage,
@@ -136,11 +141,11 @@ function parseSection(content: string, label: string): string {
   return match ? match[1].trim() : ''
 }
 
-function BuddyResponseCard({ content }: { content: string }) {
-  const simple = parseSection(content, '1\\) Simple')
-  const analogy = parseSection(content, '2\\) Analogy')
-  const examDef = parseSection(content, '3\\) Exam definition')
-  const watchOut = parseSection(content, '4\\) Watch out')
+function BuddyResponseCard({ content, language }: { content: string; language: 'en' | 'sw' }) {
+  const simple = parseSection(content, '(?:1\\)\\s*Simple|1\\)\\s*Dhana\\s*Rahisi|Simple:)')
+  const analogy = parseSection(content, '(?:2\\)\\s*Analogy|2\\)\\s*Mfano|Analogy:)')
+  const examDef = parseSection(content, '(?:3\\)\\s*Exam definition|3\\)\\s*Ufafanuzi|Exam definition:)')
+  const watchOut = parseSection(content, '(?:4\\)\\s*Watch out|4\\)\\s*Tahadhari|Watch out:)')
 
   const hasStructure = simple || analogy || examDef || watchOut
 
@@ -151,10 +156,10 @@ function BuddyResponseCard({ content }: { content: string }) {
 
   // Structured labelled sections — render each as a coloured card with markdown inside
   const remainder = content
-    .replace(/1\)\s+Simple[\s\S]*?(?=2\)|$)/i, '')
-    .replace(/2\)\s+Analogy[\s\S]*?(?=3\)|$)/i, '')
-    .replace(/3\)\s+Exam definition[\s\S]*?(?=4\)|$)/i, '')
-    .replace(/4\)\s+Watch out[\s\S]*$/i, '')
+    .replace(/(?:1\)\s*Simple|1\)\s*Dhana\s*Rahisi|Simple:)[\s\S]*?(?=(?:2\)|$))/i, '')
+    .replace(/(?:2\)\s*Analogy|2\)\s*Mfano|Analogy:)[\s\S]*?(?=(?:3\)|$))/i, '')
+    .replace(/(?:3\)\s*Exam definition|3\)\s*Ufafanuzi|Exam definition:)[\s\S]*?(?=(?:4\)|$))/i, '')
+    .replace(/(?:4\)\s*Watch out|4\)\s*Tahadhari|Watch out:)[\s\S]*$/i, '')
     .trim()
 
   return (
@@ -162,7 +167,7 @@ function BuddyResponseCard({ content }: { content: string }) {
       {simple && (
         <div className="rounded-xl bg-teal-50 p-3.5 dark:bg-teal-950/60">
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
-            💡 Simple
+            {language === 'sw' ? '💡 Dhana Rahisi (Simple)' : '💡 Simple'}
           </p>
           <MarkdownContent
             content={simple}
@@ -173,7 +178,7 @@ function BuddyResponseCard({ content }: { content: string }) {
       {analogy && (
         <div className="rounded-xl bg-amber-50 p-3.5 dark:bg-amber-950/60">
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-            🌍 African Analogy
+            {language === 'sw' ? '🌍 Mfano wa Kiafrika (African Analogy)' : '🌍 African Analogy'}
           </p>
           <MarkdownContent
             content={analogy}
@@ -184,7 +189,7 @@ function BuddyResponseCard({ content }: { content: string }) {
       {examDef && (
         <div className="rounded-xl bg-indigo-50 p-3.5 dark:bg-indigo-950/60">
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
-            📋 Exam Definition
+            {language === 'sw' ? '📋 Ufafanuzi wa Mtihani (Exam Definition)' : '📋 Exam Definition'}
           </p>
           <MarkdownContent
             content={examDef}
@@ -197,7 +202,7 @@ function BuddyResponseCard({ content }: { content: string }) {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
           <div className="flex-1">
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-400">
-              ⚠️ Watch Out
+              {language === 'sw' ? '⚠️ Tahadhari ya Mtihani (Watch Out)' : '⚠️ Watch Out'}
             </p>
             <MarkdownContent
               content={watchOut}
@@ -213,7 +218,7 @@ function BuddyResponseCard({ content }: { content: string }) {
   )
 }
 
-const STARTER_PROMPTS = [
+const STARTER_PROMPTS_EN = [
   'What is the difference between IaaS, PaaS, and SaaS? Give me an African analogy.',
   'Explain Azure Regions and Availability Zones like I am studying for AZ-900.',
   'What is the Shared Responsibility Model and why does it matter?',
@@ -221,19 +226,40 @@ const STARTER_PROMPTS = [
   'What Azure services are in the Compute category?',
 ]
 
+const STARTER_PROMPTS_SW = [
+  'Kuna tofauti gani kati ya IaaS, PaaS, na SaaS? Nipe mfano wa Kiafrika.',
+  'Eleza Azure Regions na Availability Zones kama vile ninajiandaa kwa AZ-900.',
+  'Je, Shared Responsibility Model (mfumo wa uwajibikaji wa pamoja) ni nini na kwanini ni muhimu?',
+  'Ulinganisho wa CapEx na OpEx unajitokeza vipi kwenye mtihani wa AZ-900?',
+  'Ni huduma gani za Azure ziko katika kitengo cha Compute (mashine pepe)?',
+]
+
 function BuddyPage() {
   const { profile, user, isGuest } = useAuth()
-  const language = (profile?.language ?? 'en')
+  const { toast } = useToast()
+  const { t, language } = useTranslation()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   // Supabase session id for the current chat — lazily created on first turn
   const chatSessionIdRef = useRef<string | null>(null)
+
+  const handleCopy = async (id: string, textToCopy: string) => {
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      setCopiedId(id)
+      toast.success('Explanation copied to clipboard', 'Copied')
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      toast.error('Unable to copy to clipboard')
+    }
+  }
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -378,7 +404,8 @@ function BuddyPage() {
     abortRef.current?.abort()
     setMessages([])
     setError(null)
-    chatSessionIdRef.current = null  // reset so next chat creates a fresh session
+    chatSessionIdRef.current = null // reset so next chat creates a fresh session
+    toast.info('Chat session cleared. Ready for a new AZ-900 topic!', 'New Session')
     inputRef.current?.focus()
   }
 
@@ -388,6 +415,8 @@ function BuddyPage() {
       void sendMessage(input)
     }
   }
+
+  const starterPrompts = language === 'sw' ? STARTER_PROMPTS_SW : STARTER_PROMPTS_EN
 
   return (
     <div className="flex h-[calc(100vh-9rem)] flex-col md:h-[calc(100vh-7rem)]">
@@ -399,10 +428,10 @@ function BuddyPage() {
           </div>
           <div>
             <h1 className="font-display text-xl font-bold text-[var(--text-main)]">
-              Baraza Study Buddy
+              {t('buddy.title')}
             </h1>
             <p className="text-xs text-[var(--text-muted)]">
-              Grounded answers · African analogies · AZ-900 focused
+              {t('buddy.subtitle')}
             </p>
           </div>
         </div>
@@ -412,7 +441,7 @@ function BuddyPage() {
             className="flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-main)]"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            New chat
+            {t('buddy.new_chat')}
           </button>
         )}
       </div>
@@ -426,15 +455,14 @@ function BuddyPage() {
                 <Sparkles className="h-8 w-8 text-amber-500" />
               </div>
               <h2 className="font-display text-lg font-bold text-[var(--text-main)]">
-                Habari! I am Baraza, your AZ-900 study buddy.
+                {t('buddy.welcome.title')}
               </h2>
               <p className="mt-1.5 max-w-sm text-sm text-[var(--text-muted)]">
-                Ask me anything about Azure Fundamentals. I'll explain with African everyday analogies
-                and ground every answer in study notes.
+                {t('buddy.welcome.desc')}
               </p>
             </div>
             <div className="grid w-full max-w-lg gap-2.5">
-              {STARTER_PROMPTS.map((p) => (
+              {starterPrompts.map((p) => (
                 <button
                   key={p}
                   onClick={() => void sendMessage(p)}
@@ -470,29 +498,52 @@ function BuddyPage() {
                   ) : (
                     <>
                       {msg.content ? (
-                        <BuddyResponseCard content={msg.content} />
+                        <BuddyResponseCard content={msg.content} language={language} />
                       ) : (
                         <div className="flex items-center gap-2 py-1">
                           <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
-                          <span className="text-xs text-[var(--text-muted)]">Thinking…</span>
+                          <span className="text-xs text-[var(--text-muted)]">{t('buddy.thinking')}</span>
                         </div>
                       )}
                       {msg.isStreaming && msg.content && (
                         <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-teal-600" />
                       )}
-                      {msg.topicHints && msg.topicHints.length > 0 && !msg.isStreaming && (
-                        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[var(--border-subtle)] pt-2.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                            Topics:
-                          </span>
-                          {msg.topicHints.map((t) => (
-                            <span
-                              key={t}
-                              className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-800 dark:bg-teal-900/60 dark:text-teal-200"
-                            >
-                              {t}
-                            </span>
-                          ))}
+                      {msg.content && !msg.isStreaming && (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-subtle)] pt-2.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {msg.topicHints && msg.topicHints.length > 0 && (
+                              <>
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                  {t('buddy.topics')}
+                                </span>
+                                {msg.topicHints.map((th) => (
+                                  <span
+                                    key={th}
+                                    className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-800 dark:bg-teal-900/60 dark:text-teal-200"
+                                  >
+                                    {th}
+                                  </span>
+                                ))}
+                              </>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => void handleCopy(msg.id, msg.content)}
+                            title="Copy explanation"
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-[var(--text-muted)] transition hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+                          >
+                            {copiedId === msg.id ? (
+                              <>
+                                <Check className="h-3 w-3 text-emerald-600" />
+                                <span className="text-emerald-600">{t('buddy.copied')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3 w-3" />
+                                <span>{t('buddy.copy')}</span>
+                              </>
+                            )}
+                          </button>
                         </div>
                       )}
                     </>

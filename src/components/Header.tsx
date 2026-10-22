@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Globe, LogIn, LogOut, Menu, User as UserIcon, X } from 'lucide-react'
+import { Globe, LogIn, Menu, User as UserIcon, X, Sparkles, LogOut } from 'lucide-react'
 import ThemeToggle from './ThemeToggle.tsx'
 import SignInModal from './SignInModal.tsx'
 import { useAuth } from '../lib/auth-context.tsx'
+import { useToast } from '../lib/toast-context.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 export default function Header() {
-  const { user, profile, isGuest, signOut, updateProfile } = useAuth()
+  const { user, profile, isGuest, updateProfile, signOut } = useAuth()
+  const { toast } = useToast()
+  const { t } = useTranslation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [signInModalOpen, setSignInModalOpen] = useState(false)
 
@@ -14,88 +18,96 @@ export default function Header() {
 
   const toggleLanguage = async () => {
     const nextLang = currentLang === 'en' ? 'sw' : 'en'
-    await updateProfile({ language: nextLang })
+    try {
+      await updateProfile({ language: nextLang })
+      toast.info(
+        nextLang === 'sw'
+          ? 'Lugha imebadilishwa kuwa Kiswahili (Swahili)'
+          : 'Language switched to English',
+        'Study Language'
+      )
+    } catch {
+      toast.error('Could not update language preference')
+    }
   }
 
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/90 px-4 backdrop-blur-md transition-colors">
-        <div className="mx-auto flex max-w-7xl items-center justify-between py-3">
-          {/* Brand Logo */}
+        <div className="mx-auto flex max-w-7xl items-center justify-between py-2.5">
+          {/* Brand Logo & Tagline */}
           <div className="flex items-center gap-3">
-            <Link to="/" className="group flex items-center no-underline">
-              <span className="font-display text-xl font-bold tracking-tight text-[var(--text-main)] transition-colors hover:text-teal-700 dark:hover:text-teal-300">
+            <Link to="/" className="group flex items-center gap-2 no-underline">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-700 text-white shadow-xs transition group-hover:scale-105">
+                <Sparkles className="h-4 w-4 text-amber-300" />
+              </div>
+              <span className="font-display text-lg font-bold tracking-tight text-[var(--text-main)] transition-colors hover:text-teal-700 dark:hover:text-teal-300">
                 SomoPal
               </span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation — Focused on core study tools */}
           <nav aria-label="Desktop Navigation" className="hidden items-center gap-1 text-sm font-medium md:flex">
             <Link
-              to="/"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
-            >
-              About
-            </Link>
-            <Link
-              to="/app"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
-            >
-              Dashboard
-            </Link>
-            <Link
               to="/app/buddy"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+              activeProps={{ className: 'font-bold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
             >
-              Buddy
+              {t('nav.buddy')}
             </Link>
             <Link
               to="/app/topics"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+              activeProps={{ className: 'font-bold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
             >
-              Topics
+              {t('nav.topics')}
             </Link>
             <Link
               to="/app/quiz"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+              activeProps={{ className: 'font-bold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
             >
-              Quiz
+              {t('nav.quiz')}
             </Link>
             <Link
               to="/app/readiness"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+              activeProps={{ className: 'font-bold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
             >
-              Readiness
+              {t('nav.readiness')}
             </Link>
             <Link
               to="/app/history"
-              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
-              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+              activeProps={{ className: 'font-bold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
             >
-              History
+              {t('nav.history')}
             </Link>
           </nav>
 
-          {/* Right Action Tools — Desktop: Sign In / Account only */}
-          <div className="flex items-center gap-2.5">
+          {/* Right Action Tools — Desktop controls */}
+          <div className="flex items-center gap-2">
+            {/* Quick Language switch */}
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              title={`Switch language (current: ${currentLang.toUpperCase()})`}
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-2.5 py-1 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-elevated)] hover:text-[var(--text-main)]"
+            >
+              <Globe className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+              <span>{currentLang === 'en' ? 'EN' : 'SW'}</span>
+            </button>
+
+            {/* Theme Toggle */}
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
+
             {user && !isGuest ? (
               <Link
                 to="/app/settings"
-                className="flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-800 transition hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-300 dark:hover:bg-teal-900"
+                className="flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800 transition hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-300 dark:hover:bg-teal-900"
               >
                 <UserIcon className="h-3.5 w-3.5" />
                 <span>{profile?.display_name || 'Learner'}</span>
@@ -171,63 +183,63 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Home
+                {t('nav.home')}
               </Link>
               <Link
                 to="/about"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                About SomoPal
+                {t('nav.about')}
               </Link>
               <Link
                 to="/app"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Dashboard
+                {t('nav.dashboard')}
               </Link>
               <Link
                 to="/app/buddy"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Study Buddy (Baraza)
+                {t('nav.buddy')}
               </Link>
               <Link
                 to="/app/topics"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Topics Browser
+                {t('nav.topics')}
               </Link>
               <Link
                 to="/app/quiz"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Practice Quizzes
+                {t('nav.quiz')}
               </Link>
               <Link
                 to="/app/readiness"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Readiness Tracker
+                {t('nav.readiness')}
               </Link>
               <Link
                 to="/app/history"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                My History
+                {t('nav.history')}
               </Link>
               <Link
                 to="/app/settings"
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
-                Settings & Preferences
+                {t('nav.settings')}
               </Link>
             </nav>
 

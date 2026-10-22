@@ -132,12 +132,13 @@ Rules:
 
 For each question provide: stem, options (4 strings), correctIndex (0–3), explanation (2–3 sentences on why the correct answer is right), optionExplanations (4 strings – one sentence each), difficulty, topicSlug.
 
-If language is 'sw', write stems and explanations in simple Swahili but keep Azure terms in English.
+LANGUAGE: The learner's language is {{language}}. If 'sw', write stems, options (where appropriate), and explanations in natural, clear Swahili, but preserve official Microsoft Azure technical terms in English (e.g. Availability Zone, Virtual Machine, Resource Group, Blob Storage, CapEx, OpEx) so learners are prepared for the official exam.
 
 CRITICAL: Return ONLY a raw JSON array. Do NOT include any markdown, code fences, backticks, or prose before or after the JSON. Start your response with [ and end with ].
 
 <topic>{{topic}}</topic>
 <difficulty>{{difficulty}}</difficulty>
+<language>{{language}}</language>
 
 <study_notes>
 {{context}}
@@ -196,11 +197,13 @@ export interface QuizPromptParams {
 
 export function buildQuizGenerationPrompt(params: QuizPromptParams): string {
   const safeCount = Math.max(1, Math.min(15, Math.floor(params.count) || 5))
+  const lang = params.language === 'sw' ? 'sw' : 'en'
   return QUIZ_GENERATION_PROMPT_TEMPLATE
     .replace('{{count}}', String(safeCount))
     .replace('{{topic}}', sanitizePromptParam(params.topic, 'General Azure Fundamentals', 100))
     .replace('{{difficulty}}', sanitizePromptParam(params.difficulty, 'mixed', 20))
     .replace('{{context}}', sanitizeContext(params.context, 'General Azure fundamentals notes'))
+    .replace(/\{\{language\}\}/g, lang)
 }
 
 export interface ExplainDifferentlyParams {

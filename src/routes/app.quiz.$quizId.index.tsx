@@ -13,6 +13,8 @@ import { loadAnswerHistory, saveAnswerHistory } from '../lib/demo-data.ts'
 import { MarkdownContent } from '../components/MarkdownContent.tsx'
 import { useAuth } from '../lib/auth-context.tsx'
 import { saveQuizRun } from '../lib/history.ts'
+import { useToast } from '../lib/toast-context.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/quiz/$quizId/')({
   component: QuizPlayerPage,
@@ -27,6 +29,8 @@ type AnswerState = {
 function QuizPlayerPage() {
   const navigate = useNavigate()
   const { user, isGuest } = useAuth()
+  const { toast } = useToast()
+  const { t, language } = useTranslation()
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<(AnswerState | null)[]>([])
@@ -49,20 +53,12 @@ function QuizPlayerPage() {
     }
   }, [navigate])
 
-  if (!questions) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-      </div>
-    )
-  }
-
-  const current = questions[currentIndex]
+  const current = questions ? questions[currentIndex] : null
   const currentAnswer = answers[currentIndex]
   const totalAnswered = answers.filter((a) => a !== null).length
 
   const handleSelect = (idx: number) => {
-    if (currentAnswer?.revealed) return
+    if (!current || currentAnswer?.revealed) return
     const isCorrect = idx === current.correctIndex
     setAnswers((prev) =>
       prev.map((a, i) =>
@@ -78,6 +74,7 @@ function QuizPlayerPage() {
   }
 
   const handleNext = () => {
+    if (!questions) return
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((i) => i + 1)
     } else {
@@ -112,8 +109,40 @@ function QuizPlayerPage() {
           answers,
         })
       }
+      toast.success('Quiz completed! Reviewing answers and readiness score...', 'Session Finished')
       void navigate({ to: '/app/quiz/$quizId/results', params: { quizId: 'active' } })
     }
+  }
+
+  // Keyboard navigation for distraction-free zen learning
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Avoid triggering when focused in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      const key = e.key.toLowerCase()
+      if (['1', 'a'].includes(key)) handleSelect(0)
+      else if (['2', 'b'].includes(key)) handleSelect(1)
+      else if (['3', 'c'].includes(key)) handleSelect(2)
+      else if (['4', 'd'].includes(key)) handleSelect(3)
+      else if (e.key === 'Enter') {
+        if (!currentAnswer?.revealed && currentAnswer?.selectedIndex !== undefined) {
+          handleReveal()
+        } else if (currentAnswer?.revealed) {
+          handleNext()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [currentIndex, currentAnswer, questions])
+
+  if (!questions || !current) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      </div>
+    )
   }
 
   const difficultyColor: Record<string, string> = {
@@ -241,7 +270,7 @@ function QuizPlayerPage() {
         {currentAnswer?.revealed && (
           <div className="space-y-3 border-t border-[var(--border-subtle)] pt-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Why each option?
+              {t('player.why_each')}
             </h3>
             {current.optionExplanations.map((exp, idx) => (
               <div key={idx} className="flex gap-2.5">
@@ -262,7 +291,7 @@ function QuizPlayerPage() {
               </div>
             ))}
             <div className="mt-3 rounded-xl bg-teal-50 p-3.5 dark:bg-teal-950/50">
-              <p className="mb-1.5 text-xs font-bold text-teal-700 dark:text-teal-400">💡 Overall explanation</p>
+              <p className="mb-1.5 text-xs font-bold text-teal-700 dark:text-teal-400">{t('player.explanation')}</p>
               <MarkdownContent
                 content={current.explanation}
                 compact
@@ -280,7 +309,7 @@ function QuizPlayerPage() {
               onClick={handleReveal}
               className="flex-1 rounded-xl bg-teal-700 py-2.5 text-sm font-bold text-white hover:bg-teal-800"
             >
-              Check Answer
+              {t('player.check')}
             </button>
           ) : currentAnswer?.revealed ? (
             <button
@@ -290,17 +319,17 @@ function QuizPlayerPage() {
             >
               {currentIndex < questions.length - 1 ? (
                 <>
-                  Next Question <ChevronRight className="h-4 w-4" />
+                  {t('player.next')} <ChevronRight className="h-4 w-4" />
                 </>
               ) : (
                 <>
-                  See Results <Trophy className="h-4 w-4" />
+                  {t('player.finish')} <Trophy className="h-4 w-4" />
                 </>
               )}
             </button>
           ) : (
             <p className="flex-1 py-2.5 text-center text-xs text-[var(--text-muted)]">
-              Select an answer to continue
+              {t('player.select_hint')}
             </p>
           )}
           {totalAnswered > 0 && !currentAnswer?.revealed && (
@@ -308,7 +337,7 @@ function QuizPlayerPage() {
               onClick={handleNext}
               className="rounded-xl border border-[var(--border-subtle)] px-4 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:border-[var(--border-strong)]"
             >
-              Skip
+              {t('player.skip')}
             </button>
           )}
         </div>
@@ -316,8 +345,8 @@ function QuizPlayerPage() {
 
       {/* Answered count */}
       <p className="text-center text-xs text-[var(--text-muted)]">
-        {totalAnswered} of {questions.length} answered ·{' '}
-        {answers.filter((a) => a?.isCorrect).length} correct so far
+        {totalAnswered} / {questions.length} {t('player.answered_so_far')} ·{' '}
+        {answers.filter((a) => a?.isCorrect).length} {language === 'sw' ? 'sahihi' : 'correct'}
       </p>
     </div>
   )

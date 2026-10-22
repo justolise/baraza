@@ -23,6 +23,8 @@ import {
   generateSampleProgress,
   clearAnswerHistory,
 } from '../lib/demo-data.ts'
+import { useToast } from '../lib/toast-context.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/readiness')({
   component: ReadinessPage,
@@ -95,6 +97,8 @@ function ScoreRing({
 
 function ReadinessPage() {
   const { profile } = useAuth()
+  const { toast } = useToast()
+  const { t, language } = useTranslation()
   const [report, setReport] = useState<ReadinessReport | null>(null)
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null)
 
@@ -129,11 +133,13 @@ function ReadinessPage() {
     const sample = generateSampleProgress()
     saveAnswerHistory(sample)
     setReport(calculateReadinessReport(sample))
+    toast.success('Sample readiness progress loaded!', 'Demo Progress')
   }
 
   const handleReset = () => {
     clearAnswerHistory()
     setReport(calculateReadinessReport([]))
+    toast.info('Readiness history cleared.', 'Reset Progress')
   }
 
   const daysLeft = profile?.exam_date ? daysUntil(profile.exam_date) : null
@@ -179,10 +185,10 @@ function ReadinessPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">
-              Readiness Tracker
+              {t('ready.title')}
             </h1>
             <p className="text-xs text-[var(--text-muted)]">
-              Weighted exam readiness based on recency-decay practice across all AZ-900 domains
+              {t('ready.subtitle')}
             </p>
           </div>
         </div>
@@ -191,7 +197,11 @@ function ReadinessPage() {
           {daysLeft !== null && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
               <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <span>{daysLeft === 0 ? 'Exam day!' : `${daysLeft} days to exam`}</span>
+              <span>
+                {daysLeft === 0
+                  ? (language === 'sw' ? 'Siku ya Mtihani!' : 'Exam day!')
+                  : `${daysLeft} ${t('dash.days_to_exam')}`}
+              </span>
             </div>
           )}
 
@@ -202,7 +212,7 @@ function ReadinessPage() {
             title="Populate realistic practice data across all domains"
           >
             <Zap className="h-3.5 w-3.5 text-amber-500" />
-            <span>Load Demo Progress</span>
+            <span>{t('ready.load_demo')}</span>
           </button>
           {hasData && (
             <button
@@ -211,7 +221,7 @@ function ReadinessPage() {
               title="Clear all local quiz records"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              <span>Reset</span>
+              <span>{t('ready.reset')}</span>
             </button>
           )}
         </div>

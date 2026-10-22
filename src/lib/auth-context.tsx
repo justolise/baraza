@@ -32,12 +32,15 @@ const PROFILE_STORAGE_KEY = 'somopal_user_profile'
 function createLocalGuestUser(): { user: User; profile: Profile } {
   const existingUser = typeof window !== 'undefined' ? localStorage.getItem(GUEST_STORAGE_KEY) : null
   const existingProfile = typeof window !== 'undefined' ? localStorage.getItem(PROFILE_STORAGE_KEY) : null
+  const savedLang = (typeof window !== 'undefined' ? localStorage.getItem('somopal_lang') : null) as 'sw' | 'en' | null
 
   if (existingUser && existingProfile) {
     try {
+      const parsedProfile = JSON.parse(existingProfile) as Profile
+      if (savedLang) parsedProfile.language = savedLang
       return {
         user: JSON.parse(existingUser) as User,
-        profile: JSON.parse(existingProfile) as Profile,
+        profile: parsedProfile,
       }
     } catch {
       // ignore and recreate
@@ -57,7 +60,7 @@ function createLocalGuestUser(): { user: User; profile: Profile } {
   const profile: Profile = {
     id,
     display_name: 'Guest Learner',
-    language: 'en',
+    language: savedLang || 'en',
     exam_date: null,
     created_at: new Date().toISOString(),
   }
@@ -263,14 +266,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return { error: new Error('Not authenticated') }
+    let currentUser = user
+    if (!currentUser) {
+      const guest = createLocalGuestUser()
+      currentUser = guest.user
+      setUser(guest.user)
+    }
+
+    if (updates.language && typeof window !== 'undefined') {
+      localStorage.setItem('somopal_lang', updates.language)
+    }
 
     const updatedProfile = {
-      ...(profile || { id: user.id, display_name: 'Learner', language: 'en' as const, exam_date: null }),
+      ...(profile || { id: currentUser.id, display_name: 'Learner', language: 'en' as const, exam_date: null }),
       ...updates,
     }
 
-    if (user.id.startsWith('guest-')) {
+    if (currentUser.id.startsWith('guest-')) {
       if (typeof window !== 'undefined') {
         localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile))
       }
@@ -283,7 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          id: currentUser.id,
           display_name: updatedProfile.display_name,
           language: updatedProfile.language,
           exam_date: updatedProfile.exam_date,

@@ -6,6 +6,7 @@ import Header from '../components/Header.tsx'
 import Footer from '../components/Footer.tsx'
 import MobileBottomNav from '../components/MobileBottomNav.tsx'
 import { AuthProvider } from '../lib/auth-context.tsx'
+import { ToastProvider } from '../lib/toast-context.tsx'
 
 import appCss from '../styles.css?url'
 
@@ -48,10 +49,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex min-h-screen flex-col font-sans antialiased selection:bg-teal-500/20 selection:text-teal-900 dark:selection:text-teal-200">
         <AuthProvider>
-          <Header />
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
-          <MobileBottomNav />
-          <Footer />
+          <ToastProvider>
+            <Header />
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <MobileBottomNav />
+            <Footer />
+          </ToastProvider>
         </AuthProvider>
         {import.meta.env.DEV && (
           <TanStackDevtools

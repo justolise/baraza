@@ -21,6 +21,7 @@ import {
 } from '../lib/history.ts'
 import type { QuizRunSummary } from '../lib/history.ts'
 import { MarkdownContent } from '../components/MarkdownContent.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 export const Route = createFileRoute('/app/history')({
   component: HistoryPage,
@@ -184,6 +185,7 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
         <div className="border-t border-[var(--border-subtle)] px-4 pb-4 pt-3 space-y-3">
           {run.questions.map((q, i) => {
             const userAnswer = q.answers?.[0]
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             const answered = userAnswer !== undefined
             return (
               <div
@@ -243,6 +245,7 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 function HistoryPage() {
   const { user, isGuest } = useAuth()
+  const { t, language } = useTranslation()
   const [tab, setTab] = useState<Tab>('chats')
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
   const [quizHistory, setQuizHistory] = useState<QuizRunSummary[]>([])
@@ -268,17 +271,18 @@ function HistoryPage() {
           <Lock className="h-7 w-7 text-teal-700 dark:text-teal-300" />
         </div>
         <h1 className="font-display text-xl font-bold text-[var(--text-main)]">
-          Sign in to view your history
+          {language === 'sw' ? 'Ingia ili kuona historia yako' : 'Sign in to view your history'}
         </h1>
         <p className="max-w-sm text-sm text-[var(--text-muted)]">
-          Your chat sessions and quiz results are saved automatically once you create a free account.
-          Guests only see the current session.
+          {language === 'sw'
+            ? 'Mazungumzo yako na matokeo ya majaribio yanahifadhiwa kiotomatiki mara tu unapoingia. Wageni huona kikao cha sasa pekee.'
+            : 'Your chat sessions and quiz results are saved automatically once you create a free account. Guests only see the current session.'}
         </p>
         <Link
           to="/app"
           className="rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-800"
         >
-          Go to Dashboard
+          {t('home.continue_dash')}
         </Link>
       </div>
     )
@@ -288,9 +292,9 @@ function HistoryPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">Your History</h1>
+        <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">{t('history.title')}</h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          All your past study sessions and quiz runs, saved automatically.
+          {t('history.subtitle')}
         </p>
       </div>
 
@@ -305,7 +309,7 @@ function HistoryPage() {
           }`}
         >
           <MessageSquare className="h-4 w-4" />
-          Chat Sessions
+          {t('history.tab_chats')}
           {chatSessions.length > 0 && (
             <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${tab === 'chats' ? 'bg-white/20 text-white' : 'bg-[var(--border-subtle)] text-[var(--text-muted)]'}`}>
               {chatSessions.length}
@@ -321,7 +325,7 @@ function HistoryPage() {
           }`}
         >
           <Trophy className="h-4 w-4" />
-          Quiz History
+          {t('history.tab_quizzes')}
           {quizHistory.length > 0 && (
             <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${tab === 'quizzes' ? 'bg-white/20 text-white' : 'bg-[var(--border-subtle)] text-[var(--text-muted)]'}`}>
               {quizHistory.length}

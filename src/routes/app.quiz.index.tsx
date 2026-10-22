@@ -16,6 +16,8 @@ import { retrieveChunks, formatContext } from '../lib/rag.ts'
 import { buildQuizGenerationPrompt } from '../lib/prompts.ts'
 import { CONFIG } from '../lib/config.ts'
 import { useAuth } from '../lib/auth-context.tsx'
+import { useToast } from '../lib/toast-context.tsx'
+import { useTranslation } from '../lib/i18n.ts'
 
 // ── Types & Schema ───────────────────────────────────────────────────────────
 import type { QuizQuestion } from '../lib/quiz-types.ts'
@@ -160,7 +162,9 @@ const TOPIC_OPTIONS = [
 
 function QuizHubPage() {
   const navigate = useNavigate()
-  const { profile } = useAuth()
+  useAuth()
+  const { toast } = useToast()
+  const { t, language } = useTranslation()
   const { topic: preselectedTopic } = Route.useSearch()
 
   const [selectedTopic, setSelectedTopic] = useState(preselectedTopic ?? 'all')
@@ -168,8 +172,6 @@ function QuizHubPage() {
   const [count, setCount] = useState(5)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const language = (profile?.language ?? 'en')
 
   const handleGenerate = async () => {
     setError(null)
@@ -188,16 +190,32 @@ function QuizHubPage() {
       // Store in session storage and navigate to player
       sessionStorage.setItem('somopal_quiz', JSON.stringify(questions))
       sessionStorage.setItem('somopal_quiz_topic', topicLabel)
+      toast.success(
+        language === 'sw'
+          ? `Maswali ${questions.length} yametengenezwa! Kikao cha jaribio kinaanza...`
+          : `Generated ${questions.length} practice questions! Starting session...`,
+        'Quiz Ready'
+      )
       await navigate({ to: '/app/quiz/$quizId', params: { quizId: 'active' } })
     } catch (err) {
       const rawMsg = err instanceof Error ? err.message : ''
       const friendlyMsg = rawMsg.includes('GEMINI_API_KEY') || !rawMsg
-        ? 'Unable to generate quiz questions right now. Please try again in a moment.'
+        ? (language === 'sw'
+            ? 'Haikuweza kutengeneza maswali ya jaribio sasa hivi. Tafadhali jaribu tena baada ya muda mfupi.'
+            : 'Unable to generate quiz questions right now. Please try again in a moment.')
         : rawMsg
       setError(friendlyMsg)
+      toast.error(friendlyMsg, 'Quiz Error')
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const difficultyLabels: Record<'easy' | 'medium' | 'hard' | 'mixed', string> = {
+    easy: t('quiz.diff.easy'),
+    medium: t('quiz.diff.medium'),
+    hard: t('quiz.diff.hard'),
+    mixed: t('quiz.diff.mixed'),
   }
 
   return (
@@ -208,21 +226,21 @@ function QuizHubPage() {
           <CheckSquare className="h-5 w-5 text-amber-100" />
         </div>
         <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">AZ-900 Quiz Center</h1>
+          <h1 className="font-display text-2xl font-bold text-[var(--text-main)]">{t('quiz.title')}</h1>
           <p className="text-xs text-[var(--text-muted)]">
-            AI-generated questions grounded in study notes
+            {t('quiz.subtitle')}
           </p>
         </div>
       </div>
 
       {/* Config Card */}
       <div className="card-glass space-y-6 p-6">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">Configure Your Quiz</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)]">{t('quiz.configure')}</h2>
 
         {/* Topic */}
         <div className="space-y-2">
           <label htmlFor="quiz-topic" className="block text-sm font-semibold text-[var(--text-main)]">
-            Topic
+            {t('quiz.topic')}
           </label>
           <select
             id="quiz-topic"
@@ -240,19 +258,19 @@ function QuizHubPage() {
 
         {/* Difficulty */}
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-[var(--text-main)]">Difficulty</p>
+          <p className="text-sm font-semibold text-[var(--text-main)]">{t('quiz.difficulty')}</p>
           <div className="flex flex-wrap gap-2">
             {(['easy', 'medium', 'hard', 'mixed'] as const).map((d) => (
               <button
                 key={d}
                 onClick={() => setDifficulty(d)}
-                className={`rounded-lg px-4 py-2 text-xs font-bold capitalize transition ${
+                className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
                   difficulty === d
                     ? 'bg-amber-600 text-white shadow-md'
                     : 'border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:border-amber-400'
                 }`}
               >
-                {d}
+                {difficultyLabels[d]}
               </button>
             ))}
           </div>
@@ -261,7 +279,7 @@ function QuizHubPage() {
         {/* Question Count */}
         <div className="space-y-2">
           <label htmlFor="quiz-count" className="block text-sm font-semibold text-[var(--text-main)]">
-            Number of Questions: <span className="text-amber-600 dark:text-amber-400">{count}</span>
+            {t('quiz.count')} <span className="text-amber-600 dark:text-amber-400">{count}</span>
           </label>
           <input
             id="quiz-count"
@@ -274,8 +292,8 @@ function QuizHubPage() {
             className="w-full accent-amber-600"
           />
           <div className="flex justify-between text-xs text-[var(--text-muted)]">
-            <span>3 (quick)</span>
-            <span>15 (full)</span>
+            <span>3 ({language === 'sw' ? 'haraka' : 'quick'})</span>
+            <span>15 ({language === 'sw' ? 'kamili' : 'full'})</span>
           </div>
         </div>
 
@@ -296,12 +314,12 @@ function QuizHubPage() {
           {isGenerating ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Generating {count} questions…
+              {t('quiz.generating')}
             </>
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              Generate Quiz
+              {t('quiz.generate')}
             </>
           )}
         </button>
@@ -312,7 +330,7 @@ function QuizHubPage() {
         to="/app/topics"
         className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-3 text-xs font-semibold text-[var(--text-muted)] transition hover:border-teal-400 hover:text-teal-700 dark:hover:text-teal-400"
       >
-        Browse all 31 study topics
+        {t('quiz.browse_topics')}
         <ChevronRight className="h-3.5 w-3.5" />
       </Link>
     </div>
