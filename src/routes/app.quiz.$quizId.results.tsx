@@ -13,6 +13,7 @@ import {
   Star,
 } from 'lucide-react'
 import type { QuizQuestion } from '../lib/quiz-types.ts'
+import { MarkdownContent } from '../components/MarkdownContent.tsx'
 
 export const Route = createFileRoute('/app/quiz/$quizId/results')({
   component: QuizResultsPage,
@@ -256,12 +257,14 @@ function QuizResultsPage() {
                     )
                   })}
                   <div className="rounded-xl bg-teal-50 p-3 dark:bg-teal-950/40">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
+                    <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
                       Explanation
                     </p>
-                    <p className="mt-1 text-xs leading-relaxed text-teal-900 dark:text-teal-100">
-                      {q.explanation}
-                    </p>
+                    <MarkdownContent
+                      content={q.explanation}
+                      compact
+                      className="text-teal-900 dark:text-teal-100 [&_p]:text-teal-900 dark:[&_p]:text-teal-100"
+                    />
                   </div>
                   <Link
                     to="/app/topics/$slug"

@@ -1,9 +1,8 @@
-// Seed script to populate domains, topics, and study-note chunks with embeddings
 import fs from 'node:fs'
 import path from 'node:path'
+import { createClient } from '@supabase/supabase-js'
 import { CONFIG } from '../src/lib/config.ts'
 import { getEmbedding } from '../src/lib/embeddings.ts'
-import { getSupabaseAdminClient } from '../src/lib/supabase.ts'
 
 interface ChunkData {
   title: string
@@ -47,13 +46,18 @@ async function runSeed() {
   const raw = fs.readFileSync(seedFilePath, 'utf-8')
   const seed: SeedFile = JSON.parse(raw)
 
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || CONFIG.supabaseAnonKey || ''
   const isSupabaseConfigured = Boolean(
     CONFIG.supabaseUrl &&
     !CONFIG.supabaseUrl.includes('placeholder') &&
-    (CONFIG.supabaseServiceRoleKey || CONFIG.supabaseAnonKey)
+    serviceRoleKey
   )
 
-  const supabase = isSupabaseConfigured ? getSupabaseAdminClient() : null
+  const supabase = isSupabaseConfigured
+    ? createClient(CONFIG.supabaseUrl, serviceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+    : null
 
   let domainCount = 0
   let topicCount = 0

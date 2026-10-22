@@ -37,19 +37,32 @@ export const Route = createFileRoute('/app/quiz')({
   component: QuizHubPage,
 })
 
+// ── Rate Limiter for Quiz Generation ─────────────────────────────────────────
+const quizCallHistory = new Map<string, number[]>()
+function isQuizRateLimited(key: string, limit = 8, windowMs = 60_000): boolean {
+  const now = Date.now()
+  const timestamps = (quizCallHistory.get(key) || []).filter((t) => now - t < windowMs)
+  if (timestamps.length >= limit) return true
+  timestamps.push(now)
+  quizCallHistory.set(key, timestamps)
+  return false
+}
+
+const generateQuizInputSchema = z.object({
+  topic: z.string().trim().min(1).max(150),
+  topicSlug: z.string().trim().min(1).max(100),
+  difficulty: z.enum(['easy', 'medium', 'hard', 'mixed']),
+  count: z.number().int().min(1).max(15),
+  language: z.enum(['en', 'sw']).default('en'),
+})
+
 // ── Server fn: generate quiz questions via AI + RAG ──────────────────────────
 export const generateQuiz = createServerFn({ method: 'POST' })
-  .validator(
-    (d: unknown) =>
-      d as {
-        topic: string
-        topicSlug: string
-        difficulty: 'easy' | 'medium' | 'hard' | 'mixed'
-        count: number
-        language: 'en' | 'sw'
-      }
-  )
+  .validator((d: unknown) => generateQuizInputSchema.parse(d))
   .handler(async ({ data }) => {
+    if (isQuizRateLimited(data.topicSlug, 8, 60_000)) {
+      throw new Error('You are generating quizzes quickly. Please wait a moment before trying again.')
+    }
     // 1. Retrieve context
     const chunks = await retrieveChunks(data.topic, {
       topicSlug: data.topicSlug === 'all' ? undefined : data.topicSlug,

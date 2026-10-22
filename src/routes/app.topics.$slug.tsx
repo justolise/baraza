@@ -11,6 +11,7 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import { retrieveChunks } from '../lib/rag.ts'
+import { z } from 'zod'
 
 export const Route = createFileRoute('/app/topics/$slug')({
   loader: async ({ params }) => {
@@ -20,9 +21,13 @@ export const Route = createFileRoute('/app/topics/$slug')({
   component: TopicDetailPage,
 })
 
+const loadTopicChunksSchema = z.object({
+  slug: z.string().trim().min(1).max(100),
+})
+
 // Load content chunks for a topic (server-side)
 const loadTopicChunks = createServerFn({ method: 'GET' })
-  .validator((d: unknown) => d as { slug: string })
+  .validator((d: unknown) => loadTopicChunksSchema.parse(d))
   .handler(async ({ data }) => {
     const chunks = await retrieveChunks('', {
       topicSlug: data.slug,

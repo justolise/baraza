@@ -35,7 +35,6 @@ export const CONFIG = {
   // Supabase
   supabaseUrl: getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL', ''),
   supabaseAnonKey: getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY', ''),
-  supabaseServiceRoleKey: getEnv('SUPABASE_SERVICE_ROLE_KEY', ''),
 
   // App Metadata
   appName: 'SomoPal',

@@ -61,14 +61,26 @@ export function generateSampleProgress(): AnswerRecord[] {
 }
 
 /**
- * Loads current answer history from localStorage.
+ * Loads current answer history from localStorage with runtime validation.
  */
 export function loadAnswerHistory(): AnswerRecord[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(STORAGE_HISTORY_KEY)
     if (!raw) return []
-    return JSON.parse(raw) as AnswerRecord[]
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter(
+      (r): r is AnswerRecord =>
+        Boolean(
+          r &&
+          typeof r === 'object' &&
+          typeof r.topicSlug === 'string' &&
+          typeof r.isCorrect === 'boolean' &&
+          typeof r.answeredAt === 'string'
+        )
+    )
   } catch {
     return []
   }

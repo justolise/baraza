@@ -28,15 +28,3 @@ export function getSupabaseClient(): SupabaseClient {
   )
 }
 
-/**
- * Returns an admin Supabase client with the service role key for backend operations (seeding, migrations, RPC).
- */
-export function getSupabaseAdminClient(): SupabaseClient {
-  const key = CONFIG.supabaseServiceRoleKey || CONFIG.supabaseAnonKey || 'placeholder-key'
-  return createClient(CONFIG.supabaseUrl || 'https://placeholder.supabase.co', key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  })
-}

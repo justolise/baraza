@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { QuizQuestion } from '../lib/quiz-types.ts'
 import { loadAnswerHistory, saveAnswerHistory } from '../lib/demo-data.ts'
+import { MarkdownContent } from '../components/MarkdownContent.tsx'
 
 export const Route = createFileRoute('/app/quiz/$quizId')({
   component: QuizPlayerPage,
@@ -232,14 +233,20 @@ function QuizPlayerPage() {
                 >
                   {String.fromCharCode(65 + idx)}
                 </span>
-                <p className="text-xs leading-relaxed text-[var(--text-muted)]">{exp}</p>
+                <MarkdownContent
+                  content={exp}
+                  compact
+                  className="flex-1 text-[var(--text-muted)]"
+                />
               </div>
             ))}
             <div className="mt-3 rounded-xl bg-teal-50 p-3.5 dark:bg-teal-950/50">
-              <p className="text-xs font-bold text-teal-700 dark:text-teal-400">💡 Overall explanation</p>
-              <p className="mt-1 text-xs leading-relaxed text-teal-900 dark:text-teal-100">
-                {current.explanation}
-              </p>
+              <p className="mb-1.5 text-xs font-bold text-teal-700 dark:text-teal-400">💡 Overall explanation</p>
+              <MarkdownContent
+                content={current.explanation}
+                compact
+                className="text-teal-900 dark:text-teal-100 [&_p]:text-teal-900 dark:[&_p]:text-teal-100"
+              />
             </div>
           </div>
         )}

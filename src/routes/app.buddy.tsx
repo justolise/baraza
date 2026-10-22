@@ -13,32 +13,58 @@ import {
   BookOpen,
   AlertTriangle,
 } from 'lucide-react'
+import { z } from 'zod'
 import { useAuth } from '../lib/auth-context.tsx'
 import { retrieveChunks, formatContext } from '../lib/rag.ts'
 import { buildBuddySystemPrompt } from '../lib/prompts.ts'
 import { CONFIG } from '../lib/config.ts'
+import { MarkdownContent } from '../components/MarkdownContent.tsx'
 
 export const Route = createFileRoute('/app/buddy')({
   component: BuddyPage,
 })
 
+// ─── Rate Limiter (in-memory sliding window) ─────────────────────────────────
+const chatCallHistory = new Map<string, number[]>()
+function isRateLimited(key: string, limit = 30, windowMs = 60_000): boolean {
+  const now = Date.now()
+  const timestamps = (chatCallHistory.get(key) || []).filter((t) => now - t < windowMs)
+  if (timestamps.length >= limit) return true
+  timestamps.push(now)
+  chatCallHistory.set(key, timestamps)
+  return false
+}
+
+// ─── Input Validation Schema ────────────────────────────────────────────────
+const askBuddySchema = z.object({
+  text: z.string().trim().min(1, 'Question cannot be empty').max(1500, 'Question too long (max 1500 characters)'),
+  topicSlug: z.string().max(100).optional(),
+  language: z.enum(['en', 'sw']).default('en'),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().max(2500),
+      })
+    )
+    .max(20)
+    .default([]),
+  daysToExam: z.string().max(20).optional(),
+})
+
 // ─── Server function: AI Buddy response with RAG (secure server-side execution) ─
 const askBuddy = createServerFn({ method: 'POST' })
-  .validator(
-    (data: unknown) =>
-      data as {
-        text: string
-        topicSlug?: string
-        language: 'en' | 'sw'
-        history: { role: 'user' | 'assistant'; content: string }[]
-        daysToExam?: string
-      }
-  )
+  .validator((data: unknown) => askBuddySchema.parse(data))
   .handler(async ({ data }) => {
     if (!CONFIG.geminiApiKey) {
       throw new Error(
         'The AI study buddy is currently unavailable. Please try again shortly.'
       )
+    }
+
+    // Rate limiting check (per topic or generic bucket)
+    if (isRateLimited(data.topicSlug || 'general_chat', 25, 60_000)) {
+      throw new Error('You are asking questions quickly. Please pause a moment before asking again.')
     }
 
     // 1. RAG retrieval (server-side)
@@ -58,12 +84,15 @@ const askBuddy = createServerFn({ method: 'POST' })
       context,
     })
 
-    // 3. AI SDK generation on server
+    // 3. Limit conversation history window to last 8 messages to prevent token bloat
+    const safeHistory = data.history.slice(-8)
+
+    // 4. AI SDK generation on server
     const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
     const { text } = await generateText({
       model: google(CONFIG.geminiModel),
       system: systemPrompt,
-      messages: [...data.history, { role: 'user', content: data.text }],
+      messages: [...safeHistory, { role: 'user', content: data.text }],
       maxOutputTokens: 1200,
     })
 
@@ -97,63 +126,71 @@ function BuddyResponseCard({ content }: { content: string }) {
 
   const hasStructure = simple || analogy || examDef || watchOut
 
+  // No structured sections — render as clean markdown
   if (!hasStructure) {
-    return (
-      <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed whitespace-pre-wrap text-[var(--text-main)]">
-        {content}
-      </div>
-    )
+    return <MarkdownContent content={content} />
   }
+
+  // Structured labelled sections — render each as a coloured card with markdown inside
+  const remainder = content
+    .replace(/1\)\s+Simple[\s\S]*?(?=2\)|$)/i, '')
+    .replace(/2\)\s+Analogy[\s\S]*?(?=3\)|$)/i, '')
+    .replace(/3\)\s+Exam definition[\s\S]*?(?=4\)|$)/i, '')
+    .replace(/4\)\s+Watch out[\s\S]*$/i, '')
+    .trim()
 
   return (
     <div className="space-y-3">
       {simple && (
         <div className="rounded-xl bg-teal-50 p-3.5 dark:bg-teal-950/60">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">
             💡 Simple
           </p>
-          <p className="text-sm leading-relaxed text-teal-900 dark:text-teal-100">{simple}</p>
+          <MarkdownContent
+            content={simple}
+            className="text-teal-900 dark:text-teal-100 [&_p]:text-teal-900 dark:[&_p]:text-teal-100 [&_strong]:text-teal-900 dark:[&_strong]:text-teal-100"
+          />
         </div>
       )}
       {analogy && (
         <div className="rounded-xl bg-amber-50 p-3.5 dark:bg-amber-950/60">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
             🌍 African Analogy
           </p>
-          <p className="text-sm leading-relaxed text-amber-900 dark:text-amber-100">{analogy}</p>
+          <MarkdownContent
+            content={analogy}
+            className="text-amber-900 dark:text-amber-100 [&_p]:text-amber-900 dark:[&_p]:text-amber-100 [&_strong]:text-amber-900 dark:[&_strong]:text-amber-100"
+          />
         </div>
       )}
       {examDef && (
         <div className="rounded-xl bg-indigo-50 p-3.5 dark:bg-indigo-950/60">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
             📋 Exam Definition
           </p>
-          <p className="text-sm leading-relaxed text-indigo-900 dark:text-indigo-100">{examDef}</p>
+          <MarkdownContent
+            content={examDef}
+            className="text-indigo-900 dark:text-indigo-100 [&_p]:text-indigo-900 dark:[&_p]:text-indigo-100 [&_strong]:text-indigo-900 dark:[&_strong]:text-indigo-100"
+          />
         </div>
       )}
       {watchOut && (
         <div className="flex gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 dark:border-red-900 dark:bg-red-950/40">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-          <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-400">
+          <div className="flex-1">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-400">
               ⚠️ Watch Out
             </p>
-            <p className="text-sm leading-relaxed text-red-900 dark:text-red-100">{watchOut}</p>
+            <MarkdownContent
+              content={watchOut}
+              className="text-red-900 dark:text-red-100 [&_p]:text-red-900 dark:[&_p]:text-red-100 [&_strong]:text-red-900 dark:[&_strong]:text-red-100"
+            />
           </div>
         </div>
       )}
-      {/* Remainder (quiz offer etc.) */}
-      {(() => {
-        const remainder = content
-          .replace(/1\)\s+Simple[\s\S]*?(?=2\)|$)/i, '')
-          .replace(/2\)\s+Analogy[\s\S]*?(?=3\)|$)/i, '')
-          .replace(/3\)\s+Exam definition[\s\S]*?(?=4\)|$)/i, '')
-          .replace(/4\)\s+Watch out[\s\S]*$/i, '')
-          .trim()
-        return remainder ? (
-          <p className="mt-1 text-xs italic text-[var(--text-muted)]">{remainder}</p>
-        ) : null
-      })()}
+      {remainder && (
+        <MarkdownContent content={remainder} className="text-xs italic text-[var(--text-muted)]" />
+      )}
     </div>
   )
 }
