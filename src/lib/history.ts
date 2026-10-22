@@ -104,7 +104,7 @@ export async function saveQuizRun(payload: QuizSavePayload): Promise<string | nu
 
   // 3. Insert answers for revealed questions
   const answerRows = payload.answers
-    .map((a, i) => ({ answer: a, questionId: insertedQs?.[i]?.id }))
+    .map((a, i) => ({ answer: a, questionId: insertedQs[i]?.id }))
     .filter(({ answer, questionId }) => answer?.revealed && questionId)
     .map(({ answer, questionId }) => ({
       question_id: questionId as string,
@@ -135,6 +135,7 @@ export interface QuizRunSummary {
     correct_index: number
     options: string[]
     option_explanations: string[]
+    topic_slug: string
     answers: { selected_index: number; is_correct: boolean }[]
   }[]
 }
@@ -148,7 +149,7 @@ export async function loadQuizHistory(userId: string): Promise<QuizRunSummary[]>
     .select(`
       id, created_at, length,
       quiz_questions (
-        id, stem, difficulty, explanation, correct_index, options, option_explanations,
+        id, stem, difficulty, explanation, correct_index, options, option_explanations, topic_slug,
         quiz_answers ( selected_index, is_correct )
       )
     `)
@@ -158,9 +159,10 @@ export async function loadQuizHistory(userId: string): Promise<QuizRunSummary[]>
 
   if (error) { console.error('loadQuizHistory:', error.message); return [] }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return (quizzes ?? []).map((q: any) => {
     const questions = (q.quiz_questions ?? []) as QuizRunSummary['questions']
-    const answeredQs = questions.filter((qq) => qq.answers?.length > 0)
+    const answeredQs = questions.filter((qq) => qq.answers.length > 0)
     const correct = answeredQs.filter((qq) => qq.answers[0]?.is_correct).length
     return {
       id: q.id as string,

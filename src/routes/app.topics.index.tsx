@@ -101,10 +101,10 @@ function TopicsPage() {
   const filtered = DOMAINS.map((domain) => ({
     ...domain,
     topics: domain.topics.filter(
-      (t) =>
+      (topic) =>
         !q ||
-        t.title.toLowerCase().includes(q) ||
-        t.summary.toLowerCase().includes(q)
+        topic.title.toLowerCase().includes(q) ||
+        topic.summary.toLowerCase().includes(q)
     ),
   })).filter((d) => d.topics.length > 0)
 

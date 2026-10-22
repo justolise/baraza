@@ -248,9 +248,9 @@ function QuizHubPage() {
             onChange={(e) => setSelectedTopic(e.target.value)}
             className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3.5 py-2.5 text-sm text-[var(--text-main)] focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
           >
-            {TOPIC_OPTIONS.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.label}
+            {TOPIC_OPTIONS.map((opt) => (
+              <option key={opt.slug} value={opt.slug}>
+                {opt.label}
               </option>
             ))}
           </select>

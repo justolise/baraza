@@ -78,7 +78,7 @@ function ChatSessionRow({ session }: { session: ChatSession }) {
     if (!messages && !loading) {
       setLoading(true)
       const msgs = await loadChatMessages(session.id)
-      setMessages(msgs as ChatMessage[])
+      setMessages(msgs)
       setLoading(false)
     }
   }
@@ -150,6 +150,7 @@ function ChatSessionRow({ session }: { session: ChatSession }) {
 // ─── Quiz Run Row ─────────────────────────────────────────────────────────────
 function QuizRunRow({ run }: { run: QuizRunSummary }) {
   const [open, setOpen] = useState(false)
+  const { t } = useTranslation()
 
   return (
     <div className="card-glass overflow-hidden">
@@ -184,7 +185,7 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
       {open && (
         <div className="border-t border-[var(--border-subtle)] px-4 pb-4 pt-3 space-y-3">
           {run.questions.map((q, i) => {
-            const userAnswer = q.answers?.[0]
+            const userAnswer = q.answers[0]
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             const answered = userAnswer !== undefined
             return (
@@ -193,7 +194,7 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
                 className={`rounded-xl border p-3.5 ${
                   !answered
                     ? 'border-[var(--border-subtle)] bg-[var(--bg-surface)]'
-                    : userAnswer?.is_correct
+                    : userAnswer.is_correct
                       ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40'
                       : 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40'
                 }`}
@@ -201,7 +202,7 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs font-semibold text-[var(--text-muted)]">Q{i + 1}</p>
                   {answered ? (
-                    userAnswer?.is_correct ? (
+                    userAnswer.is_correct ? (
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
                     ) : (
                       <XCircle className="h-4 w-4 shrink-0 text-red-600" />
@@ -213,7 +214,7 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
                 <p className="mt-1 text-sm font-medium leading-snug text-[var(--text-main)]">
                   {q.stem}
                 </p>
-                {answered && !userAnswer?.is_correct && (
+                {answered && !userAnswer.is_correct && (
                   <p className="mt-1.5 text-xs text-[var(--text-muted)]">
                     Correct:{' '}
                     <span className="font-semibold text-green-700 dark:text-green-400">
@@ -228,10 +229,11 @@ function QuizRunRow({ run }: { run: QuizRunSummary }) {
                 )}
                 <Link
                   to="/app/topics/$slug"
-                  params={{ slug: q.option_explanations?.[0] ? q.stem.toLowerCase().replace(/\s+/g, '-').slice(0, 40) : 'shared-responsibility-model' }}
+                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  params={{ slug: q.topic_slug ?? 'shared-responsibility-model' }}
                   className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 hover:underline dark:text-teal-400"
                 >
-                  <BookOpen className="h-3 w-3" /> Study this topic
+                  <BookOpen className="h-3 w-3" /> {t('history.study_topic')}
                 </Link>
               </div>
             )
@@ -258,7 +260,7 @@ function HistoryPage() {
       loadChatSessions(user.id),
       loadQuizHistory(user.id),
     ]).then(([sessions, quizzes]) => {
-      setChatSessions(sessions as ChatSession[])
+      setChatSessions(sessions)
       setQuizHistory(quizzes)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -348,15 +350,15 @@ function HistoryPage() {
           {chatSessions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[var(--border-subtle)] py-14 text-center">
               <MessageSquare className="mx-auto mb-3 h-8 w-8 text-[var(--text-muted)]" />
-              <p className="text-sm font-semibold text-[var(--text-muted)]">No chat sessions yet</p>
+              <p className="text-sm font-semibold text-[var(--text-muted)]">{t('history.no_chats')}</p>
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Start a conversation with your Study Buddy and it will appear here.
+                {t('history.no_chats_hint')}
               </p>
               <Link
                 to="/app/buddy"
                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-4 py-2 text-xs font-bold text-white hover:bg-teal-800"
               >
-                Open Study Buddy
+                {t('history.open_buddy')}
               </Link>
             </div>
           ) : (
@@ -371,15 +373,15 @@ function HistoryPage() {
           {quizHistory.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[var(--border-subtle)] py-14 text-center">
               <Trophy className="mx-auto mb-3 h-8 w-8 text-[var(--text-muted)]" />
-              <p className="text-sm font-semibold text-[var(--text-muted)]">No quizzes completed yet</p>
+              <p className="text-sm font-semibold text-[var(--text-muted)]">{t('history.no_quizzes')}</p>
               <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Complete a practice quiz and your score will be saved here automatically.
+                {t('history.no_quizzes_hint')}
               </p>
               <Link
                 to="/app/quiz"
                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700"
               >
-                Take a Quiz
+                {t('history.take_quiz')}
               </Link>
             </div>
           ) : (

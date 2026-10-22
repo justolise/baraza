@@ -236,6 +236,19 @@ export const TRANSLATIONS = {
   'history.tab_quizzes': { en: 'Quiz Results', sw: 'Matokeo ya Majaribio' },
   'history.empty_chats': { en: 'No chat sessions found yet.', sw: 'Bado hakuna mazungumzo yaliyorekodiwa.' },
   'history.empty_quizzes': { en: 'No quiz attempts recorded yet.', sw: 'Bado hakuna majaribio yaliyorekodiwa.' },
+  'history.no_chats': { en: 'No chat sessions yet', sw: 'Bado hakuna mazungumzo' },
+  'history.no_chats_hint': {
+    en: 'Start a conversation with your Study Buddy and it will appear here.',
+    sw: 'Anza mazungumzo na Baraza na yataonekana hapa.',
+  },
+  'history.open_buddy': { en: 'Open Study Buddy', sw: 'Fungua Msaidizi Baraza' },
+  'history.no_quizzes': { en: 'No quizzes completed yet', sw: 'Bado hujafanya jaribio lolote' },
+  'history.no_quizzes_hint': {
+    en: 'Complete a practice quiz and your score will be saved here automatically.',
+    sw: 'Fanya jaribio la mazoezi na alama yako itahifadhiwa hapa kiotomatiki.',
+  },
+  'history.take_quiz': { en: 'Take a Quiz', sw: 'Fanya Jaribio' },
+  'history.study_topic': { en: 'Study this topic', sw: 'Soma mada hii' },
 } as const
 
 export type TranslationKey = keyof typeof TRANSLATIONS
