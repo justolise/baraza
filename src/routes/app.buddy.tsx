@@ -36,6 +36,10 @@ function isRateLimited(key: string, limit = 30, windowMs = 60_000): boolean {
 }
 
 // ─── Input Validation Schema ────────────────────────────────────────────────
+// History messages can contain long AI replies, so we cap each entry at 8 000
+// chars (enough for any typical response) and truncate on the client side
+// before the request is made, so this limit should never be hit in practice.
+const HISTORY_MSG_MAX = 8_000
 const askBuddySchema = z.object({
   text: z.string().trim().min(1, 'Question cannot be empty').max(1500, 'Question too long (max 1500 characters)'),
   topicSlug: z.string().max(100).optional(),
@@ -44,7 +48,7 @@ const askBuddySchema = z.object({
     .array(
       z.object({
         role: z.enum(['user', 'assistant']),
-        content: z.string().max(2500),
+        content: z.string().max(HISTORY_MSG_MAX),
       })
     )
     .max(20)
@@ -246,10 +250,16 @@ function BuddyPage() {
       ])
 
       try {
+        // Truncate each history message to the schema cap before sending.
+        // Assistant replies can be very long, so we keep the last 8 turns and
+        // clip each entry to HISTORY_MSG_MAX chars to avoid Zod validation errors.
         const historyForAI = messages
           .slice(-12)
           .filter((m) => m.content)
-          .map((m) => ({ role: m.role, content: m.content }))
+          .map((m) => ({
+            role: m.role,
+            content: m.content.slice(0, HISTORY_MSG_MAX),
+          }))
 
         const daysToExam = profile?.exam_date
           ? String(
