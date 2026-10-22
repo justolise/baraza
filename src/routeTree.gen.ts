@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppBuddyRouteImport } from './routes/app.buddy'
+import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppQuizRouteImport } from './routes/app.quiz'
 import { Route as AppReadinessRouteImport } from './routes/app.readiness'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
@@ -45,6 +46,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppBuddyRoute = AppBuddyRouteImport.update({
   id: '/buddy',
   path: '/buddy',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => AppRoute,
 } as any)
 const AppQuizRoute = AppQuizRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
   '/app/buddy': typeof AppBuddyRoute
+  '/app/history': typeof AppHistoryRoute
   '/app/quiz': typeof AppQuizRouteWithChildren
   '/app/readiness': typeof AppReadinessRoute
   '/app/settings': typeof AppSettingsRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/app/buddy': typeof AppBuddyRoute
+  '/app/history': typeof AppHistoryRoute
   '/app/quiz': typeof AppQuizRouteWithChildren
   '/app/readiness': typeof AppReadinessRoute
   '/app/settings': typeof AppSettingsRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
   '/app/buddy': typeof AppBuddyRoute
+  '/app/history': typeof AppHistoryRoute
   '/app/quiz': typeof AppQuizRouteWithChildren
   '/app/readiness': typeof AppReadinessRoute
   '/app/settings': typeof AppSettingsRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/app'
     | '/app/buddy'
+    | '/app/history'
     | '/app/quiz'
     | '/app/readiness'
     | '/app/settings'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/app/buddy'
+    | '/app/history'
     | '/app/quiz'
     | '/app/readiness'
     | '/app/settings'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/app'
     | '/app/buddy'
+    | '/app/history'
     | '/app/quiz'
     | '/app/readiness'
     | '/app/settings'
@@ -210,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/buddy'
       fullPath: '/app/buddy'
       preLoaderRoute: typeof AppBuddyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/history': {
+      id: '/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/quiz': {
@@ -301,6 +320,7 @@ const AppTopicsRouteWithChildren = AppTopicsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppBuddyRoute: typeof AppBuddyRoute
+  AppHistoryRoute: typeof AppHistoryRoute
   AppQuizRoute: typeof AppQuizRouteWithChildren
   AppReadinessRoute: typeof AppReadinessRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -310,6 +330,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppBuddyRoute: AppBuddyRoute,
+  AppHistoryRoute: AppHistoryRoute,
   AppQuizRoute: AppQuizRouteWithChildren,
   AppReadinessRoute: AppReadinessRoute,
   AppSettingsRoute: AppSettingsRoute,
@@ -327,12 +348,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

@@ -19,6 +19,7 @@ import { retrieveChunks, formatContext } from '../lib/rag.ts'
 import { buildBuddySystemPrompt } from '../lib/prompts.ts'
 import { CONFIG } from '../lib/config.ts'
 import { MarkdownContent } from '../components/MarkdownContent.tsx'
+import { createChatSession, saveChatMessage } from '../lib/history.ts'
 
 export const Route = createFileRoute('/app/buddy')({
   component: BuddyPage,
@@ -208,7 +209,7 @@ const STARTER_PROMPTS = [
 ]
 
 function BuddyPage() {
-  const { profile } = useAuth()
+  const { profile, user, isGuest } = useAuth()
   const language = (profile?.language ?? 'en')
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -218,6 +219,8 @@ function BuddyPage() {
   const abortRef = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Supabase session id for the current chat — lazily created on first turn
+  const chatSessionIdRef = useRef<string | null>(null)
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -306,6 +309,22 @@ function BuddyPage() {
               : m
           )
         )
+
+        // ── Persist to Supabase for signed-in users ──────────────────────────
+        if (user && !isGuest) {
+          // Lazily create a session on the first turn, using the question as title
+          if (!chatSessionIdRef.current) {
+            const sessionId = await createChatSession(
+              user.id,
+              text.trim().slice(0, 80),
+            )
+            chatSessionIdRef.current = sessionId
+          }
+          if (chatSessionIdRef.current) {
+            await saveChatMessage(chatSessionIdRef.current, user.id, 'user', text.trim())
+            await saveChatMessage(chatSessionIdRef.current, user.id, 'assistant', fullContent)
+          }
+        }
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error'
         if (errMsg.includes('aborted') || errMsg.includes('AbortError')) {
@@ -336,6 +355,7 @@ function BuddyPage() {
     abortRef.current?.abort()
     setMessages([])
     setError(null)
+    chatSessionIdRef.current = null  // reset so next chat creates a fresh session
     inputRef.current?.focus()
   }
 

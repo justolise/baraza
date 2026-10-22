@@ -81,6 +81,13 @@ export default function Header() {
             >
               Readiness
             </Link>
+            <Link
+              to="/app/history"
+              className="rounded-lg px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--primary-light)] hover:text-teal-700 dark:hover:text-teal-300"
+              activeProps={{ className: 'font-semibold text-teal-700 dark:text-teal-300 bg-[var(--primary-light)]' }}
+            >
+              History
+            </Link>
           </nav>
 
           {/* Right Action Tools — Desktop: Sign In / Account only */}
@@ -207,6 +214,13 @@ export default function Header() {
                 className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
               >
                 Readiness Tracker
+              </Link>
+              <Link
+                to="/app/history"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-[var(--text-main)] hover:bg-[var(--primary-light)]"
+              >
+                My History
               </Link>
               <Link
                 to="/app/settings"

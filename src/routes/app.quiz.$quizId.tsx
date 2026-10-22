@@ -11,6 +11,8 @@ import {
 import type { QuizQuestion } from '../lib/quiz-types.ts'
 import { loadAnswerHistory, saveAnswerHistory } from '../lib/demo-data.ts'
 import { MarkdownContent } from '../components/MarkdownContent.tsx'
+import { useAuth } from '../lib/auth-context.tsx'
+import { saveQuizRun } from '../lib/history.ts'
 
 export const Route = createFileRoute('/app/quiz/$quizId')({
   component: QuizPlayerPage,
@@ -24,6 +26,7 @@ type AnswerState = {
 
 function QuizPlayerPage() {
   const navigate = useNavigate()
+  const { user, isGuest } = useAuth()
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<(AnswerState | null)[]>([])
@@ -78,8 +81,9 @@ function QuizPlayerPage() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((i) => i + 1)
     } else {
-      // Save results and navigate
+      // Save results to sessionStorage for the results page
       sessionStorage.setItem('somopal_quiz_answers', JSON.stringify(answers))
+      // Save to local readiness history
       try {
         const existing = loadAnswerHistory()
         const newRecords = answers.map((a, i) => ({
@@ -90,6 +94,23 @@ function QuizPlayerPage() {
         saveAnswerHistory([...existing, ...newRecords])
       } catch {
         // storage fallback
+      }
+      // Persist to Supabase for signed-in users (fire-and-forget)
+      if (user && !isGuest) {
+        void saveQuizRun({
+          userId: user.id,
+          topicLabel,
+          questions: questions.map((q) => ({
+            stem: q.stem,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation,
+            optionExplanations: q.optionExplanations,
+            difficulty: q.difficulty,
+            topicSlug: q.topicSlug,
+          })),
+          answers,
+        })
       }
       void navigate({ to: '/app/quiz/$quizId/results', params: { quizId: 'active' } })
     }
