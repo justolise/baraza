@@ -3,7 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { BookOpen, ChevronRight, Search } from 'lucide-react'
 import { useState } from 'react'
 
-export const Route = createFileRoute('/app/topics')({
+export const Route = createFileRoute('/app/topics/')({
   component: TopicsPage,
 })
 

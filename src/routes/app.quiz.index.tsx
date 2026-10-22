@@ -32,7 +32,7 @@ const quizItemSchema = z.object({
 
 const quizSchema = z.array(quizItemSchema)
 
-export const Route = createFileRoute('/app/quiz')({
+export const Route = createFileRoute('/app/quiz/')({
   validateSearch: z.object({ topic: z.string().optional() }),
   component: QuizHubPage,
 })
