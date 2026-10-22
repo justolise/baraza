@@ -40,7 +40,7 @@ function isRateLimited(key: string, limit = 30, windowMs = 60_000): boolean {
 // History messages can contain long AI replies, so we cap each entry at 8 000
 // chars (enough for any typical response) and truncate on the client side
 // before the request is made, so this limit should never be hit in practice.
-const HISTORY_MSG_MAX = 8_000
+const HISTORY_MSG_MAX = 16_000
 const askBuddySchema = z.object({
   text: z.string().trim().min(1, 'Question cannot be empty').max(1500, 'Question too long (max 1500 characters)'),
   topicSlug: z.string().max(100).optional(),
@@ -92,14 +92,26 @@ const askBuddy = createServerFn({ method: 'POST' })
     // 3. Limit conversation history window to last 8 messages to prevent token bloat
     const safeHistory = data.history.slice(-8)
 
-    // 4. AI SDK generation on server
+    // 4. AI SDK generation on server with high token limit and fallback model
     const google = createGoogleGenerativeAI({ apiKey: CONFIG.geminiApiKey })
-    const { text } = await generateText({
-      model: google(CONFIG.geminiModel),
-      system: systemPrompt,
-      messages: [...safeHistory, { role: 'user', content: data.text }],
-      maxOutputTokens: 1200,
-    })
+
+    async function callBuddyModel(modelName: string) {
+      const { text } = await generateText({
+        model: google(modelName),
+        system: systemPrompt,
+        messages: [...safeHistory, { role: 'user', content: data.text }],
+        maxOutputTokens: 8192,
+      })
+      return text
+    }
+
+    let text: string
+    try {
+      text = await callBuddyModel(CONFIG.geminiModel)
+    } catch (primaryErr) {
+      console.warn('Primary model buddy generation failed, attempting fallback:', primaryErr)
+      text = await callBuddyModel(CONFIG.geminiFallbackModel)
+    }
 
     return {
       content: text,
@@ -252,6 +264,9 @@ function BuddyPage() {
         { id: assistantId, role: 'assistant', content: '', isStreaming: true },
       ])
 
+      const controller = new AbortController()
+      abortRef.current = controller
+
       try {
         // Truncate each history message to the schema cap before sending.
         // Assistant replies can be very long, so we keep the last 8 turns and
@@ -285,12 +300,15 @@ function BuddyPage() {
           },
         })
 
+        if (controller.signal.aborted) return
+
         // Smooth typewriter streaming animation for rich dynamic feel
         const fullContent = res.content
         const chunkSize = Math.max(4, Math.floor(fullContent.length / 30))
         let accumulated = ''
 
         for (let i = 0; i < fullContent.length; i += chunkSize) {
+          if (controller.signal.aborted) break
           accumulated = fullContent.slice(0, i + chunkSize)
           setMessages((prev) =>
             prev.map((m) =>
@@ -302,16 +320,17 @@ function BuddyPage() {
           await new Promise((resolve) => setTimeout(resolve, 15))
         }
 
+        const finalContent = controller.signal.aborted ? accumulated : fullContent
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: fullContent, topicHints: res.topicHints, isStreaming: false }
+              ? { ...m, content: finalContent, topicHints: res.topicHints, isStreaming: false }
               : m
           )
         )
 
         // ── Persist to Supabase for signed-in users ──────────────────────────
-        if (user && !isGuest) {
+        if (user && !isGuest && finalContent) {
           // Lazily create a session on the first turn, using the question as title
           if (!chatSessionIdRef.current) {
             const sessionId = await createChatSession(
@@ -322,18 +341,18 @@ function BuddyPage() {
           }
           if (chatSessionIdRef.current) {
             await saveChatMessage(chatSessionIdRef.current, user.id, 'user', text.trim())
-            await saveChatMessage(chatSessionIdRef.current, user.id, 'assistant', fullContent)
+            await saveChatMessage(chatSessionIdRef.current, user.id, 'assistant', finalContent)
           }
         }
       } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : 'Unknown error'
-        if (errMsg.includes('aborted') || errMsg.includes('AbortError')) {
+        if (controller.signal.aborted) {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId ? { ...m, isStreaming: false } : m
             )
           )
         } else {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error'
           setError(errMsg)
           setMessages((prev) => prev.filter((m) => m.id !== assistantId))
         }
@@ -344,11 +363,12 @@ function BuddyPage() {
         inputRef.current?.focus()
       }
     },
-    [isLoading, language, messages, profile?.exam_date, scrollToBottom]
+    [isLoading, isGuest, language, messages, profile?.exam_date, scrollToBottom, user]
   )
 
   const stopStreaming = () => {
     abortRef.current?.abort()
+    setIsLoading(false)
   }
 
   const clearChat = () => {
