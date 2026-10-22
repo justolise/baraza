@@ -308,6 +308,7 @@ function BuddyPage() {
         let accumulated = ''
 
         for (let i = 0; i < fullContent.length; i += chunkSize) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (controller.signal.aborted) break
           accumulated = fullContent.slice(0, i + chunkSize)
           setMessages((prev) =>
@@ -320,6 +321,7 @@ function BuddyPage() {
           await new Promise((resolve) => setTimeout(resolve, 15))
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         const finalContent = controller.signal.aborted ? accumulated : fullContent
         setMessages((prev) =>
           prev.map((m) =>
