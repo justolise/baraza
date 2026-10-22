@@ -14,7 +14,7 @@ import { MarkdownContent } from '../components/MarkdownContent.tsx'
 import { useAuth } from '../lib/auth-context.tsx'
 import { saveQuizRun } from '../lib/history.ts'
 
-export const Route = createFileRoute('/app/quiz/$quizId')({
+export const Route = createFileRoute('/app/quiz/$quizId/')({
   component: QuizPlayerPage,
 })
 

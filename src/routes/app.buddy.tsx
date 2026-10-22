@@ -101,6 +101,7 @@ const askBuddy = createServerFn({ method: 'POST' })
         system: systemPrompt,
         messages: [...safeHistory, { role: 'user', content: data.text }],
         maxOutputTokens: 8192,
+        temperature: 0.2,
       })
       return text
     }

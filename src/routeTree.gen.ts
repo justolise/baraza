@@ -18,9 +18,9 @@ import { Route as AppHistoryRouteImport } from './routes/app.history'
 import { Route as AppReadinessRouteImport } from './routes/app.readiness'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppQuizIndexRouteImport } from './routes/app.quiz.index'
-import { Route as AppQuizQuizIdRouteImport } from './routes/app.quiz.$quizId'
 import { Route as AppTopicsIndexRouteImport } from './routes/app.topics.index'
 import { Route as AppTopicsSlugRouteImport } from './routes/app.topics.$slug'
+import { Route as AppQuizQuizIdIndexRouteImport } from './routes/app.quiz.$quizId.index'
 import { Route as AppQuizQuizIdResultsRouteImport } from './routes/app.quiz.$quizId.results'
 
 const IndexRoute = IndexRouteImport.update({
@@ -68,11 +68,6 @@ const AppQuizIndexRoute = AppQuizIndexRouteImport.update({
   path: '/quiz/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppQuizQuizIdRoute = AppQuizQuizIdRouteImport.update({
-  id: '/quiz/$quizId',
-  path: '/quiz/$quizId',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppTopicsIndexRoute = AppTopicsIndexRouteImport.update({
   id: '/topics/',
   path: '/topics/',
@@ -83,10 +78,15 @@ const AppTopicsSlugRoute = AppTopicsSlugRouteImport.update({
   path: '/topics/$slug',
   getParentRoute: () => AppRoute,
 } as any)
+const AppQuizQuizIdIndexRoute = AppQuizQuizIdIndexRouteImport.update({
+  id: '/quiz/$quizId/',
+  path: '/quiz/$quizId/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppQuizQuizIdResultsRoute = AppQuizQuizIdResultsRouteImport.update({
-  id: '/results',
-  path: '/results',
-  getParentRoute: () => AppQuizQuizIdRoute,
+  id: '/quiz/$quizId/results',
+  path: '/quiz/$quizId/results',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -98,11 +98,11 @@ export interface FileRoutesByFullPath {
   '/app/readiness': typeof AppReadinessRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
-  '/app/quiz/$quizId': typeof AppQuizQuizIdRouteWithChildren
   '/app/topics/$slug': typeof AppTopicsSlugRoute
   '/app/quiz/': typeof AppQuizIndexRoute
   '/app/topics/': typeof AppTopicsIndexRoute
   '/app/quiz/$quizId/results': typeof AppQuizQuizIdResultsRoute
+  '/app/quiz/$quizId/': typeof AppQuizQuizIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,11 +112,11 @@ export interface FileRoutesByTo {
   '/app/readiness': typeof AppReadinessRoute
   '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
-  '/app/quiz/$quizId': typeof AppQuizQuizIdRouteWithChildren
   '/app/topics/$slug': typeof AppTopicsSlugRoute
   '/app/quiz': typeof AppQuizIndexRoute
   '/app/topics': typeof AppTopicsIndexRoute
   '/app/quiz/$quizId/results': typeof AppQuizQuizIdResultsRoute
+  '/app/quiz/$quizId': typeof AppQuizQuizIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,11 +128,11 @@ export interface FileRoutesById {
   '/app/readiness': typeof AppReadinessRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
-  '/app/quiz/$quizId': typeof AppQuizQuizIdRouteWithChildren
   '/app/topics/$slug': typeof AppTopicsSlugRoute
   '/app/quiz/': typeof AppQuizIndexRoute
   '/app/topics/': typeof AppTopicsIndexRoute
   '/app/quiz/$quizId/results': typeof AppQuizQuizIdResultsRoute
+  '/app/quiz/$quizId/': typeof AppQuizQuizIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -145,11 +145,11 @@ export interface FileRouteTypes {
     | '/app/readiness'
     | '/app/settings'
     | '/app/'
-    | '/app/quiz/$quizId'
     | '/app/topics/$slug'
     | '/app/quiz/'
     | '/app/topics/'
     | '/app/quiz/$quizId/results'
+    | '/app/quiz/$quizId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -159,11 +159,11 @@ export interface FileRouteTypes {
     | '/app/readiness'
     | '/app/settings'
     | '/app'
-    | '/app/quiz/$quizId'
     | '/app/topics/$slug'
     | '/app/quiz'
     | '/app/topics'
     | '/app/quiz/$quizId/results'
+    | '/app/quiz/$quizId'
   id:
     | '__root__'
     | '/'
@@ -174,11 +174,11 @@ export interface FileRouteTypes {
     | '/app/readiness'
     | '/app/settings'
     | '/app/'
-    | '/app/quiz/$quizId'
     | '/app/topics/$slug'
     | '/app/quiz/'
     | '/app/topics/'
     | '/app/quiz/$quizId/results'
+    | '/app/quiz/$quizId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -252,13 +252,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppQuizIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/quiz/$quizId': {
-      id: '/app/quiz/$quizId'
-      path: '/quiz/$quizId'
-      fullPath: '/app/quiz/$quizId'
-      preLoaderRoute: typeof AppQuizQuizIdRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/topics/': {
       id: '/app/topics/'
       path: '/topics'
@@ -273,27 +266,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTopicsSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/quiz/$quizId/': {
+      id: '/app/quiz/$quizId/'
+      path: '/quiz/$quizId'
+      fullPath: '/app/quiz/$quizId/'
+      preLoaderRoute: typeof AppQuizQuizIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/quiz/$quizId/results': {
       id: '/app/quiz/$quizId/results'
-      path: '/results'
+      path: '/quiz/$quizId/results'
       fullPath: '/app/quiz/$quizId/results'
       preLoaderRoute: typeof AppQuizQuizIdResultsRouteImport
-      parentRoute: typeof AppQuizQuizIdRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
-
-interface AppQuizQuizIdRouteChildren {
-  AppQuizQuizIdResultsRoute: typeof AppQuizQuizIdResultsRoute
-}
-
-const AppQuizQuizIdRouteChildren: AppQuizQuizIdRouteChildren = {
-  AppQuizQuizIdResultsRoute: AppQuizQuizIdResultsRoute,
-}
-
-const AppQuizQuizIdRouteWithChildren = AppQuizQuizIdRoute._addFileChildren(
-  AppQuizQuizIdRouteChildren,
-)
 
 interface AppRouteChildren {
   AppBuddyRoute: typeof AppBuddyRoute
@@ -301,10 +289,11 @@ interface AppRouteChildren {
   AppReadinessRoute: typeof AppReadinessRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
-  AppQuizQuizIdRoute: typeof AppQuizQuizIdRouteWithChildren
   AppTopicsSlugRoute: typeof AppTopicsSlugRoute
   AppQuizIndexRoute: typeof AppQuizIndexRoute
   AppTopicsIndexRoute: typeof AppTopicsIndexRoute
+  AppQuizQuizIdResultsRoute: typeof AppQuizQuizIdResultsRoute
+  AppQuizQuizIdIndexRoute: typeof AppQuizQuizIdIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -313,10 +302,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppReadinessRoute: AppReadinessRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
-  AppQuizQuizIdRoute: AppQuizQuizIdRouteWithChildren,
   AppTopicsSlugRoute: AppTopicsSlugRoute,
   AppQuizIndexRoute: AppQuizIndexRoute,
   AppTopicsIndexRoute: AppTopicsIndexRoute,
+  AppQuizQuizIdResultsRoute: AppQuizQuizIdResultsRoute,
+  AppQuizQuizIdIndexRoute: AppQuizQuizIdIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

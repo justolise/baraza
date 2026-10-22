@@ -92,6 +92,7 @@ export const generateQuiz = createServerFn({ method: 'POST' })
         output: Output.object({ schema: quizSchema }),
         prompt,
         maxOutputTokens: 8192,
+        temperature: 0.1,
       })
       return output
     }
