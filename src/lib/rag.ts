@@ -17,11 +17,13 @@ export interface Chunk {
 let _chunks: Chunk[] | null = null
 
 function cosineSim(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    throw new Error(`Embedding dimension mismatch in cosineSim: ${a.length} vs ${b.length}`)
+  }
   let dot = 0
   let normA = 0
   let normB = 0
-  const len = Math.min(a.length, b.length)
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i]
     normA += a[i] * a[i]
     normB += b[i] * b[i]
@@ -59,6 +61,10 @@ async function getChunks(): Promise<Chunk[]> {
   for (const domain of data.domains) {
     for (const topic of domain.topics) {
       for (const chunk of topic.chunks) {
+        if (!Array.isArray(chunk.embedding) || chunk.embedding.length !== CONFIG.embeddingDim) {
+          console.warn(`[RAG] Chunk ${chunk.id} embedding dim ${chunk.embedding.length} !== ${CONFIG.embeddingDim}, skipping`)
+          continue
+        }
         chunks.push({
           id: chunk.id,
           topicSlug: topic.slug,

@@ -21,6 +21,8 @@ if (isNaN(embeddingDim) || embeddingDim <= 0) {
 
 export const CONFIG = {
   // AI Models
+  // SECURITY NOTE (H4): GEMINI_API_KEY must NEVER be prefixed with VITE_.
+  // It is exclusively for server functions. Client bundles must never access this key.
   geminiApiKey: getEnv('GEMINI_API_KEY', ''),
   geminiModel: getEnv('GEMINI_MODEL', 'gemini-2.5-flash'),
   geminiFallbackModel: getEnv('GEMINI_FALLBACK_MODEL', 'gemini-1.5-flash'),

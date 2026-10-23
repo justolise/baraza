@@ -50,6 +50,22 @@ function isQuizRateLimited(key: string, limit = 8, windowMs = 60_000): boolean {
   return false
 }
 
+function quizRateLimitKey(topicSlug: string): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getWebRequest } = require('@tanstack/react-start/server') as {
+      getWebRequest: () => Request | undefined
+    }
+    const req = getWebRequest()
+    const ip = req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+               req?.headers.get('x-real-ip') ??
+               'unknown'
+    return `quiz:${ip}:${topicSlug}`
+  } catch {
+    return `quiz:${topicSlug}`
+  }
+}
+
 const generateQuizInputSchema = z.object({
   topic: z.string().trim().min(1).max(150),
   topicSlug: z.string().trim().min(1).max(100),
@@ -62,7 +78,7 @@ const generateQuizInputSchema = z.object({
 export const generateQuiz = createServerFn({ method: 'POST' })
   .validator((d: unknown) => generateQuizInputSchema.parse(d))
   .handler(async ({ data }) => {
-    if (isQuizRateLimited(data.topicSlug, 8, 60_000)) {
+    if (isQuizRateLimited(quizRateLimitKey(data.topicSlug), 8, 60_000)) {
       throw new Error('You are generating quizzes quickly. Please wait a moment before trying again.')
     }
     // 1. Retrieve context

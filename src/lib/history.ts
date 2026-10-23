@@ -56,6 +56,7 @@ export async function loadChatMessages(sessionId: string) {
 export interface QuizSavePayload {
   userId: string
   topicLabel: string
+  language?: 'en' | 'sw' | string
   questions: {
     stem: string
     options: string[]
@@ -70,6 +71,7 @@ export interface QuizSavePayload {
 
 /** Persists a completed quiz run and returns the quiz row id */
 export async function saveQuizRun(payload: QuizSavePayload): Promise<string | null> {
+  // Note on H3: RLS enforces auth.uid() == user_id for authenticated calls in Supabase.
   const supabase = getSupabaseClient()
 
   // 1. Insert quiz header
@@ -94,7 +96,8 @@ export async function saveQuizRun(payload: QuizSavePayload): Promise<string | nu
     explanation: q.explanation,
     option_explanations: q.optionExplanations,
     difficulty: q.difficulty || 'medium',
-    language: 'en',
+    topic_slug: q.topicSlug || 'shared-responsibility-model',
+    language: payload.language ?? 'en',
   }))
   const { data: insertedQs, error: qqErr } = await supabase
     .from('quiz_questions')

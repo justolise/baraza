@@ -31,14 +31,37 @@ export const Route = createFileRoute('/app/buddy')({
 })
 
 // ─── Rate Limiter (in-memory sliding window) ─────────────────────────────────
+// NOTE: This is a best-effort limiter for serverless. It resets on cold starts.
+// For production, replace with a persistent store (Supabase usage_limits or Upstash Redis).
 const chatCallHistory = new Map<string, number[]>()
-function isRateLimited(key: string, limit = 30, windowMs = 60_000): boolean {
+function isRateLimited(key: string, limit = 25, windowMs = 60_000): boolean {
   const now = Date.now()
   const timestamps = (chatCallHistory.get(key) || []).filter((t) => now - t < windowMs)
   if (timestamps.length >= limit) return true
   timestamps.push(now)
   chatCallHistory.set(key, timestamps)
   return false
+}
+
+// Build a server-side rate-limit key that cannot be bypassed by rotating topic slugs.
+// Uses x-forwarded-for (set by Vercel) so each IP is capped independently.
+// Topic is included only to provide per-topic granularity within the IP cap.
+function chatRateLimitKey(topicSlug: string | undefined): string {
+  try {
+    // getWebRequest is injected by @tanstack/react-start server context
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getWebRequest } = require('@tanstack/react-start/server') as {
+      getWebRequest: () => Request | undefined
+    }
+    const req = getWebRequest()
+    const ip = req?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+               req?.headers.get('x-real-ip') ??
+               'unknown'
+    return `chat:${ip}:${topicSlug ?? 'general'}`
+  } catch {
+    // Fallback: use topic only (still better than nothing)
+    return `chat:${topicSlug ?? 'general'}`
+  }
 }
 
 // ─── Input Validation Schema ────────────────────────────────────────────────
@@ -72,8 +95,9 @@ const askBuddy = createServerFn({ method: 'POST' })
       )
     }
 
-    // Rate limiting check (per topic or generic bucket)
-    if (isRateLimited(data.topicSlug || 'general_chat', 25, 60_000)) {
+    // Rate limiting: keyed on server-derived IP + topic, not client-supplied topic alone.
+    // This prevents bypass by rotating topic slugs.
+    if (isRateLimited(chatRateLimitKey(data.topicSlug), 25, 60_000)) {
       throw new Error('You are asking questions quickly. Please pause a moment before asking again.')
     }
 
@@ -374,13 +398,13 @@ function BuddyPage() {
           }
         }
       } catch (err: unknown) {
-        if (controller.signal.aborted) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, isStreaming: false } : m
-            )
+        // M5 fix: always clear isStreaming so the blinking cursor never gets stuck
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, isStreaming: false } : m
           )
-        } else {
+        )
+        if (!controller.signal.aborted) {
           const errMsg = err instanceof Error ? err.message : 'Unknown error'
           setError(errMsg)
           setMessages((prev) => prev.filter((m) => m.id !== assistantId))

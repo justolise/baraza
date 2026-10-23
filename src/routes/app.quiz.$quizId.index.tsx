@@ -44,7 +44,25 @@ function QuizPlayerPage() {
       return
     }
     try {
-      const qs = JSON.parse(raw) as QuizQuestion[]
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('Invalid quiz data')
+      }
+      const qs = (parsed as unknown[]).filter((q): q is QuizQuestion => {
+        return (
+          typeof q === 'object' &&
+          q !== null &&
+          typeof (q as QuizQuestion).stem === 'string' &&
+          Array.isArray((q as QuizQuestion).options) &&
+          (q as QuizQuestion).options.length === 4 &&
+          typeof (q as QuizQuestion).correctIndex === 'number' &&
+          (q as QuizQuestion).correctIndex >= 0 &&
+          (q as QuizQuestion).correctIndex <= 3
+        )
+      })
+      if (qs.length === 0) {
+        throw new Error('No valid questions found')
+      }
       setQuestions(qs)
       setAnswers(new Array(qs.length).fill(null) as null[])
       setTopicLabel(label ?? 'AZ-900 Quiz')
@@ -97,6 +115,7 @@ function QuizPlayerPage() {
         void saveQuizRun({
           userId: user.id,
           topicLabel,
+          language,
           questions: questions.map((q) => ({
             stem: q.stem,
             options: q.options,
