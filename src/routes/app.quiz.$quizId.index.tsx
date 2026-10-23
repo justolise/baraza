@@ -54,6 +54,7 @@ function QuizPlayerPage() {
           q !== null &&
           typeof (q as QuizQuestion).stem === 'string' &&
           Array.isArray((q as QuizQuestion).options) &&
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           (q as QuizQuestion).options.length === 4 &&
           typeof (q as QuizQuestion).correctIndex === 'number' &&
           (q as QuizQuestion).correctIndex >= 0 &&

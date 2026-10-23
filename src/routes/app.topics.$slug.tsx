@@ -197,10 +197,10 @@ const TOPIC_META: Record<string, TopicMeta | undefined> = {
     domain: 'Describe Azure Architecture & Services', domainSlug: 'azure-architecture', color: 'amber',
   },
   'pricing-calculator-and-tco': {
-    title: 'Pricing & TCO Calculator',
-    summary: 'Estimate Azure costs per service with the Pricing Calculator; compare cloud vs on-premises costs with the TCO Calculator.',
-    analogy: 'The Pricing Calculator is like asking a contractor for a quote per item; the TCO Calculator is like comparing buying vs renting a house over 10 years.',
-    keyTerms: ['Pricing Calculator', 'TCO Calculator', 'Cost Estimation', 'Total Cost of Ownership'],
+    title: 'Pricing Calculator & TCO',
+    summary: 'Estimate new Azure costs with the Pricing Calculator; evaluate on-premises vs cloud TCO savings with Azure Migrate.',
+    analogy: 'The Pricing Calculator is estimating the cost of materials and labor before purchasing; TCO analysis in Azure Migrate compares the total multi-year cost of maintaining on-premises datacenters versus cloud migration.',
+    keyTerms: ['Pricing Calculator', 'Total Cost of Ownership (TCO)', 'Azure Migrate Business Case', 'Cost Estimation'],
     domain: 'Describe Azure Management & Governance', domainSlug: 'azure-management', color: 'indigo',
   },
   'cost-management-and-budgets': {
